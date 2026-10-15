@@ -105,6 +105,25 @@
   .cmp .col div{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
   .cmp .col b{font-weight:700;}
   @media (max-width:600px){ .bars .row{grid-template-columns:105px 1fr 92px;} }
+  /* ---- Tablet yatay: tam ekran, iki sütun ---- */
+  @media (min-width:960px) and (orientation:landscape){
+    header{display:flex;align-items:center;gap:16px;padding:calc(8px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));text-align:left;}
+    header h1{font-size:1.25rem;white-space:nowrap;}
+    header p{display:none;}
+    .userbar{margin:0 0 0 auto;}
+    .wrap{max-width:none;padding:0 max(20px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));}
+    nav.tabs{justify-content:flex-start;margin:6px 0 12px;padding:6px 0;}
+    #p-ozet.on,#p-fatura.on,#p-fiyat.on{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;grid-auto-flow:row dense;}
+    #p-ozet .card,#p-fatura .card,#p-fiyat .card{margin:0;}
+    .card.wide{grid-column:1 / -1;}
+    .table-scroll{max-height:none;}
+    #p-fatura .table-scroll{max-height:60vh;}
+    #limit-tiles{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #fiyat-tiles,#kis-tiles{grid-template-columns:repeat(6,minmax(0,1fr));}
+    #fiyat-tiles>.tile:nth-child(-n+3),#kis-tiles>.tile:nth-child(-n+3){grid-column:span 2;}
+    #fiyat-tiles>.tile:nth-child(n+4),#kis-tiles>.tile:nth-child(n+4){grid-column:span 3;}
+  }
+  .hdr-btn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:5px 10px;font-size:.78rem;cursor:pointer;}
 </style>
 </head>
 <body>
@@ -119,7 +138,7 @@
 <header>
   <h1>⚡ Elektrik Takip</h1>
   <p>Cihaz planından fatura tahmini · gerçek faturayla karşılaştırma · yıllık 4.000 kWh takibi</p>
-  <div class="userbar" id="userbar" style="display:none"><span id="user-email"></span> · <button class="icon-btn" id="signout-btn">Çıkış yap</button></div>
+  <div class="userbar" id="userbar" style="display:none"><button class="hdr-btn" id="install-btn" hidden>📲 Ana ekrana ekle</button><button class="hdr-btn" id="fs-btn">⛶ Tam ekran</button><span id="user-email"></span> · <button class="icon-btn" id="signout-btn">Çıkış yap</button></div>
 </header>
 
 <div class="wrap">
@@ -168,20 +187,20 @@
       </details>
     </div>
 
-    <div class="card">
+    <div class="card wide">
       <h2>Aylık tüketim (takvim ayı)</h2>
       <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen (sayaç/fatura)</span><span><i style="background:var(--s-plan)"></i>Cihaz planına göre tahmin</span></div>
       <div id="chart-wrap"><svg id="chart" width="100%" height="240" role="img" aria-label="Aylık tüketim grafiği"></svg><div id="chart-tip"></div></div>
       <details open><summary>Aylık tablo (kümülatif toplamla)</summary><div class="table-scroll" id="ay-tablo"></div></details>
     </div>
 
-    <div class="card">
+    <div class="card wide">
       <h2>Gelecek fatura dönemleri <span class="badge">her yeni veriyle yeniden hesaplanır</span></h2>
       <p class="hint">Bilinen günler için gerçek sayaç verisi, bilinmeyen günler için cihaz planı kullanılır. Enerji fiyatı = max(düşük tarife, (PTF + YEKDEM) × K × kalibrasyon). Vergiler: ETV %5 (enerji bedeli üzerinden) + KDV %10.</p>
       <div class="table-scroll" id="donem-tablo"></div>
     </div>
 
-    <div class="card">
+    <div class="card wide">
       <details><summary>ℹ️ Notlar ve kaynaklar</summary>
         <ul class="hint" style="padding-left:18px;margin:0;display:grid;gap:6px">
           <li><b>Tüketim:</b> takvim ayları ADM Elektrik Dağıtım verisinden; fatura dönemleri Aydem e-Arşiv faturalarından.</li>
@@ -248,7 +267,7 @@
       <div class="cmp" id="son-fatura-cmp"></div>
     </div>
 
-    <div class="card">
+    <div class="card wide">
       <h2>Fatura geçmişi</h2>
       <p class="hint"><b>Brüt kWh</b> = ödenecek tutar ÷ kWh (enerji + dağıtım + vergiler dahil gerçek maliyet). <b>Hesap</b> = uygulamanın faturadaki birim fiyatlarla hesapladığı tutar (doğrulama). <b>Tahmin</b> = o dönem için uygulamanın önceden yaptığı ilk/son tahmin.</p>
       <div class="table-scroll" id="fatura-tablo"></div>
@@ -272,7 +291,7 @@
       <div class="btn-row"><button class="btn secondary" id="s-save">Ayarları kaydet</button><span class="hint" id="kal-info" style="margin:0"></span></div>
     </div>
 
-    <div class="card">
+    <div class="card wide">
       <h2>Aylık PTF ve YEKDEM <span class="badge" id="ptf-badge"></span></h2>
       <p class="hint">PTF (piyasa takas fiyatı) her gün EPİAŞ bülteninden otomatik güncellenir. YEKDEM'i EPDK yayınlar; yeni değer açıklanınca ilgili ayın kutusuna yazıp kaydedin. İtalik değerler tahmindir (geçen yılın aynı ayı × son 3 ayın yıllık değişimi).</p>
       <div class="table-scroll" id="ptf-tablo"></div>
@@ -625,7 +644,7 @@ function renderKlima(ilk){
   const brut = ilk ? ilk.brutNet : brutBirim(enerjiFiyatTahmin(todayN(),todayN()+30));
   const list = Object.entries(cihazlar).filter(([k,c])=>/klima/i.test(c.ad||'')).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0));
   const mi = new Date().getMonth();
-  $('klima-tablo').innerHTML = list.length ? `<table><thead><tr><th>Klima</th><th>Güç (W)</th><th>Kaynak</th><th>Günde 1 saat → ay (kWh)</th><th>Günde 1 saat → ay (TL)</th><th>${AYLAR_UZUN[mi]} planı (saat/gün)</th><th>${AYLAR_UZUN[mi]} planı (TL/ay)</th></tr></thead><tbody>${
+  $('klima-tablo').innerHTML = list.length ? `<table><thead><tr><th>Klima</th><th>Güç (W)</th><th>Kaynak</th><th title="Günde 1 saat çalışırsa aylık">1 sa/gün → kWh/ay</th><th title="Günde 1 saat çalışırsa aylık">→ TL/ay</th><th>${AYLAR[mi]} planı sa/gün</th><th>${AYLAR[mi]} TL/ay</th></tr></thead><tbody>${
     list.map(([k,c])=>{ const kwhAy=(+c.guc||0)/1000*30*(c.adet??1); const plan=(c.aylik&&c.aylik[mi])||0;
       return `<tr><td>${esc(c.ad)}</td><td>${fmt0(+c.guc||0)}</td><td>${c.kaynak==='olculen'?'ölçülen':'<span class="diff-mid">tahmin</span>'}</td><td>${fmt(kwhAy,1)}</td><td><b>${fmt0(kwhAy*brut)}</b></td><td>${c.mod==='kwh'?'—':fmt(plan,1)}</td><td>${fmt0(cihazGunluk(c,mi)*30*brut)}</td></tr>`; }).join('')
     }</tbody></table><p class="hint" style="margin-top:8px">TL hesabı sıradaki faturanın brüt kWh maliyetiyle (${fmt(brut,2)} TL) yapılır.</p>` : '<p class="hint">Adında “Klima” geçen cihaz yok.</p>';
@@ -913,7 +932,7 @@ function initData(){
 
 /* ======================= Auth (Su Faturası ile aynı) ======================= */
 function setAuthStatus(msg,isErr){ const el=$('auth-status-line'); el.textContent=msg||''; el.style.color=isErr?'var(--danger)':'var(--muted)'; }
-function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.standalone===true; }
 $('google-signin-btn').addEventListener('click',()=>{
   auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(()=>{
     if (isStandalone()){ setAuthStatus('Google giriş sayfasına yönlendiriliyor…'); return auth.signInWithRedirect(provider); }
@@ -932,6 +951,15 @@ auth.onAuthStateChanged(user=>{
   else { $('auth-overlay').style.display='flex'; $('userbar').style.display='none'; }
 });
 window.addEventListener('pageshow',e=>{ if(e.persisted) location.reload(); });
+/* Ana ekrana ekleme ve tam ekran */
+let _installEvt=null;
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _installEvt=e; $('install-btn').hidden=false; });
+window.addEventListener('appinstalled',()=>{ $('install-btn').hidden=true; toast('Uygulama ana ekrana eklendi.'); });
+$('install-btn').addEventListener('click',async()=>{ if(!_installEvt) return; _installEvt.prompt(); await _installEvt.userChoice.catch(()=>{}); _installEvt=null; $('install-btn').hidden=true; });
+function fsGuncelle(){ const inApp=window.matchMedia('(display-mode: fullscreen)').matches||window.matchMedia('(display-mode: standalone)').matches; $('fs-btn').hidden = inApp || !document.documentElement.requestFullscreen; $('fs-btn').textContent = document.fullscreenElement? '⤢ Tam ekrandan çık' : '⛶ Tam ekran'; }
+$('fs-btn').addEventListener('click',()=>{ if(document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen().catch(()=>{}); });
+document.addEventListener('fullscreenchange',()=>{ fsGuncelle(); renderOzet(); });
+fsGuncelle();
 if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
