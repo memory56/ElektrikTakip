@@ -28,13 +28,14 @@
   *{box-sizing:border-box;}
   body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
     background:linear-gradient(160deg,#0b1220,#111d33 60%,#0b1220);color:var(--text);min-height:100vh;}
-  header{padding:calc(18px + env(safe-area-inset-top)) 16px 4px;text-align:center;}
+  header{padding:calc(10px + env(safe-area-inset-top)) 16px 2px;text-align:center;}
   header h1{margin:0;font-size:1.45rem;}
-  header p{margin:4px 0 0;color:var(--muted);font-size:.85rem;}
+  header p{display:none;}
   .userbar{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:6px;font-size:.78rem;color:var(--muted);}
   .wrap{max-width:1100px;margin:0 auto;padding:8px 14px calc(60px + env(safe-area-inset-bottom));}
-  nav.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 16px;position:sticky;top:0;z-index:5;
-    padding:8px 0;background:rgba(11,18,32,.92);backdrop-filter:blur(6px);}
+  .topbar{position:sticky;top:0;z-index:20;background:rgba(11,18,32,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);margin-bottom:14px;}
+  .topnav{max-width:1100px;margin:0 auto;padding:0 14px;}
+  nav.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:0;padding:8px 0 10px;}
   nav.tabs button{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:9px 14px;border-radius:999px;
     font-size:.88rem;font-weight:600;cursor:pointer;}
   nav.tabs button.on{background:var(--accent);color:#04121f;border-color:var(--accent);}
@@ -112,7 +113,8 @@
     header p{display:none;}
     .userbar{margin:0 0 0 auto;}
     .wrap{max-width:none;padding:0 max(20px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));}
-    nav.tabs{justify-content:flex-start;margin:6px 0 12px;padding:6px 0;}
+    .topnav{max-width:none;padding:0 max(20px, env(safe-area-inset-right)) 0 max(20px, env(safe-area-inset-left));}
+    nav.tabs{justify-content:flex-start;padding:6px 0 8px;}
     #p-ozet.on,#p-fatura.on,#p-fiyat.on{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start;grid-auto-flow:row dense;}
     #p-ozet .card,#p-fatura .card,#p-fiyat .card{margin:0;}
     .card.wide{grid-column:1 / -1;}
@@ -135,19 +137,23 @@
   <p id="auth-status-line" style="min-height:16px;font-size:.78rem"></p>
 </div>
 
+<div class="topbar">
 <header>
   <h1>⚡ Elektrik Takip</h1>
   <p>Cihaz planından fatura tahmini · gerçek faturayla karşılaştırma · yıllık 4.000 kWh takibi</p>
   <div class="userbar" id="userbar" style="display:none"><button class="hdr-btn" id="install-btn" hidden>📲 Ana ekrana ekle</button><button class="hdr-btn" id="fs-btn">⛶ Tam ekran</button><span id="user-email"></span> · <button class="icon-btn" id="signout-btn">Çıkış yap</button></div>
 </header>
-
-<div class="wrap">
+<div class="topnav">
   <nav class="tabs">
     <button data-p="ozet" class="on">Özet</button>
     <button data-p="cihaz">Cihazlar</button>
     <button data-p="fatura">Faturalar</button>
     <button data-p="fiyat">Fiyatlar & Ayarlar</button>
   </nav>
+</div>
+</div>
+
+<div class="wrap">
 
   <!-- ================= ÖZET ================= -->
   <section class="page on" id="p-ozet">
