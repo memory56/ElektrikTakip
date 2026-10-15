@@ -172,21 +172,6 @@
       <p class="hint" style="margin-top:10px">Brüt kWh = (enerji + %5 ETV × enerji + dağıtım) × (1 + %10 KDV). Kış dönemleri: Aralık, Ocak ve Şubat faturaları.</p>
     </div>
 
-    <div class="card">
-      <h2>Klimalar <span class="badge">günde 1 saat ne tutar?</span></h2>
-      <div class="table-scroll" id="klima-tablo"></div>
-      <details style="margin-top:12px" id="olc-details"><summary>📏 Bir cihazın gerçek gücünü sayaçla ölç</summary>
-        <p class="hint">Diğer her şey kapalıyken cihazı çalıştırın; başlangıç ve bitişte sayaçtaki <b>toplam</b> endeksi okuyun. Uygulama ortalama gücü hesaplar ve isterseniz cihaz planına yazar. (Buzdolabı gibi kapatılamayan cihazlar ölçüme dahil olur; süre ne kadar uzunsa sonuç o kadar doğru olur.)</p>
-        <div class="grid">
-          <div class="field"><label>Cihaz</label><select id="olc-cihaz"></select></div>
-          <div class="field"><label>Başlangıç endeksi</label><input type="number" id="olc-ilk" step="0.001" inputmode="decimal"></div>
-          <div class="field"><label>Bitiş endeksi</label><input type="number" id="olc-son" step="0.001" inputmode="decimal"></div>
-          <div class="field"><label>Süre (dakika)</label><input type="number" id="olc-dk" step="1" value="60" inputmode="numeric"></div>
-        </div>
-        <div class="btn-row"><span id="olc-sonuc" class="hint" style="margin:0"></span><button class="btn secondary" id="olc-uygula" disabled>Gücü cihaz planına yaz</button></div>
-      </details>
-    </div>
-
     <div class="card wide">
       <h2>Aylık tüketim (takvim ayı)</h2>
       <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen (sayaç/fatura)</span><span><i style="background:var(--s-plan)"></i>Cihaz planına göre tahmin</span></div>
@@ -206,7 +191,7 @@
           <li><b>Tüketim:</b> takvim ayları ADM Elektrik Dağıtım verisinden; fatura dönemleri Aydem e-Arşiv faturalarından.</li>
           <li><b>Fiyatlar:</b> PTF her sabah <a href="https://www.epias.com.tr/" target="_blank" rel="noopener" style="color:var(--accent)">EPİAŞ</a> günlük bülteninden otomatik güncellenir. YEKDEM'i EPDK yayınlar; yeni değer çıkınca Fiyatlar & Ayarlar sayfasından girin. Son kaynak katsayısı (K) mesken için 1,05.</li>
           <li><b>Doğrulama:</b> uygulama Ağustos 2026 faturasını kuruşu kuruşuna hesaplıyor (3.462,88 TL yuvarlamasız).</li>
-          <li><b>Klimalar:</b> tam modeller bulunamadığı için güçler tahmindir (ısıtırken ortalama). Yukarıdaki “sayaçla ölç” ile gerçek değeri bulabilirsiniz.</li>
+          <li><b>Klima güçleri (tahmin, çalışırken ortalama):</b> Arçelik Invertech 18000 ≈ 1.200 W — aynı sınıf Arçelik 18000 inverter'lerin etiket değeri ısıtmada 1,6 kW, soğutmada 1,5 kW; Kuşadası kışında kısmi yükte ortalama bunun altında kalır. Ocak 2025 kayıtlarınızdan (günde 4,5 saat klima, ayda 624 kWh) kaba hesapla ~1,5 kW çıkıyor; kayıtlar ayın yalnızca yarısını kapsadığı için kesin değil. GE SmartSense 9000 ≈ 750 W ve Vestel BIOX melez 9000 ≈ 700 W — muhtemelen inverter'siz eski sistemler; 9000 BTU etiket değeri ~0,8–0,85 kW, termostat devreye girip çıktıkça ortalama biraz düşer. Daha iyi bir değer bulunursa Cihazlar sayfasından değiştirin.</li>
           <li><b>Eski Excel'deki hata:</b> elektrikli battaniye günde 6 kWh sayılıyordu; doğrusu 56 W × 6 saat = 0,34 kWh/gün. Burada düzeltildi.</li>
           <li><b>Limit kuralı:</b> önceki ya da içinde bulunulan takvim yılında 4.000 kWh aşılırsa son kaynak tarifesi uygulanır.</li>
         </ul>
@@ -612,7 +597,6 @@ function renderOzet(){
 
   renderChart(o, yil);
   renderKis(ds, sf);
-  renderKlima(ilk);
   // gelecek dönemler tablosu
   let rows='';
   for(const d of ds){
@@ -640,35 +624,6 @@ function renderKis(ds, sf){
     <div class="tile hi"><div class="lbl">Brüt kWh maliyeti</div><div class="val">${rng(brutBirim(lo),brutBirim(hi),2)} TL</div><div class="sub">kış dönemleri tahmini</div></div>
     <div class="tile"><div class="lbl">Kontrol: son fatura</div><div class="val">${sf&&sf.odenecek? fmt(sf.odenecek/sf.kwh,2)+' TL':'—'}</div><div class="sub">${sf? donemLabel(sf.donem)+' gerçek brüt':''}</div></div>`;
 }
-function renderKlima(ilk){
-  const brut = ilk ? ilk.brutNet : brutBirim(enerjiFiyatTahmin(todayN(),todayN()+30));
-  const list = Object.entries(cihazlar).filter(([k,c])=>/klima/i.test(c.ad||'')).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0));
-  const mi = new Date().getMonth();
-  $('klima-tablo').innerHTML = list.length ? `<table><thead><tr><th>Klima</th><th>Güç (W)</th><th>Kaynak</th><th title="Günde 1 saat çalışırsa aylık">1 sa/gün → kWh/ay</th><th title="Günde 1 saat çalışırsa aylık">→ TL/ay</th><th>${AYLAR[mi]} planı sa/gün</th><th>${AYLAR[mi]} TL/ay</th></tr></thead><tbody>${
-    list.map(([k,c])=>{ const kwhAy=(+c.guc||0)/1000*30*(c.adet??1); const plan=(c.aylik&&c.aylik[mi])||0;
-      return `<tr><td>${esc(c.ad)}</td><td>${fmt0(+c.guc||0)}</td><td>${c.kaynak==='olculen'?'ölçülen':'<span class="diff-mid">tahmin</span>'}</td><td>${fmt(kwhAy,1)}</td><td><b>${fmt0(kwhAy*brut)}</b></td><td>${c.mod==='kwh'?'—':fmt(plan,1)}</td><td>${fmt0(cihazGunluk(c,mi)*30*brut)}</td></tr>`; }).join('')
-    }</tbody></table><p class="hint" style="margin-top:8px">TL hesabı sıradaki faturanın brüt kWh maliyetiyle (${fmt(brut,2)} TL) yapılır.</p>` : '<p class="hint">Adında “Klima” geçen cihaz yok.</p>';
-  // ölçüm cihaz listesi
-  const sel=$('olc-cihaz'); const cur=sel.value;
-  sel.innerHTML = Object.entries(cihazlar).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0)).map(([k,c])=>`<option value="${k}">${esc(c.ad)}</option>`).join('');
-  if(cur && cihazlar[cur]) sel.value=cur; else { const kk=list[0]; if(kk) sel.value=kk[0]; }
-  olcHesap();
-}
-let _olcW=null;
-function olcHesap(){
-  const a=parseFloat($('olc-ilk').value), b=parseFloat($('olc-son').value), dk=parseFloat($('olc-dk').value);
-  _olcW=null; $('olc-uygula').disabled=true;
-  if(isNaN(a)||isNaN(b)||isNaN(dk)||dk<=0||b<=a){ $('olc-sonuc').textContent='Başlangıç ve bitiş endeksi ile süreyi girin.'; return; }
-  _olcW = (b-a)/(dk/60)*1000;
-  $('olc-sonuc').innerHTML = `Ortalama güç: <b>${fmt0(_olcW)} W</b> (${fmt(b-a,3)} kWh / ${fmt0(dk)} dk)`;
-  $('olc-uygula').disabled=false;
-}
-['olc-ilk','olc-son','olc-dk'].forEach(id=>$(id).addEventListener('input',olcHesap));
-$('olc-uygula').addEventListener('click',()=>{
-  const k=$('olc-cihaz').value; const c=cihazlar[k]; if(!c||_olcW===null) return;
-  db.ref(`${ROOT}/cihazlar/${k}`).update({guc:Math.round(_olcW), kaynak:'olculen'}).then(()=>{ toast(`${c.ad}: güç ${fmt0(_olcW)} W olarak kaydedildi.`); ['olc-ilk','olc-son'].forEach(i=>$(i).value=''); olcHesap(); });
-});
-
 function renderChart(o, yil){
   const svg=$('chart'); const W = svg.clientWidth||700, H=240, padL=44, padB=26, padT=12, padR=8;
   const max = Math.max(50, ...o.aylar.map(a=>a.g+a.p))*1.12;
