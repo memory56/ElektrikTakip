@@ -148,16 +148,50 @@
     </div>
 
     <div class="card">
+      <h2>Kış maliyeti <span class="badge">vergiler dahil, kWh başına</span></h2>
+      <div class="tiles" id="kis-tiles"></div>
+      <p class="hint" style="margin-top:10px">Brüt kWh = (enerji + %5 ETV × enerji + dağıtım) × (1 + %10 KDV). Kış dönemleri: Aralık, Ocak ve Şubat faturaları.</p>
+    </div>
+
+    <div class="card">
+      <h2>Klimalar <span class="badge">günde 1 saat ne tutar?</span></h2>
+      <div class="table-scroll" id="klima-tablo"></div>
+      <details style="margin-top:12px" id="olc-details"><summary>📏 Bir cihazın gerçek gücünü sayaçla ölç</summary>
+        <p class="hint">Diğer her şey kapalıyken cihazı çalıştırın; başlangıç ve bitişte sayaçtaki <b>toplam</b> endeksi okuyun. Uygulama ortalama gücü hesaplar ve isterseniz cihaz planına yazar. (Buzdolabı gibi kapatılamayan cihazlar ölçüme dahil olur; süre ne kadar uzunsa sonuç o kadar doğru olur.)</p>
+        <div class="grid">
+          <div class="field"><label>Cihaz</label><select id="olc-cihaz"></select></div>
+          <div class="field"><label>Başlangıç endeksi</label><input type="number" id="olc-ilk" step="0.001" inputmode="decimal"></div>
+          <div class="field"><label>Bitiş endeksi</label><input type="number" id="olc-son" step="0.001" inputmode="decimal"></div>
+          <div class="field"><label>Süre (dakika)</label><input type="number" id="olc-dk" step="1" value="60" inputmode="numeric"></div>
+        </div>
+        <div class="btn-row"><span id="olc-sonuc" class="hint" style="margin:0"></span><button class="btn secondary" id="olc-uygula" disabled>Gücü cihaz planına yaz</button></div>
+      </details>
+    </div>
+
+    <div class="card">
       <h2>Aylık tüketim (takvim ayı)</h2>
       <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen (sayaç/fatura)</span><span><i style="background:var(--s-plan)"></i>Cihaz planına göre tahmin</span></div>
       <div id="chart-wrap"><svg id="chart" width="100%" height="240" role="img" aria-label="Aylık tüketim grafiği"></svg><div id="chart-tip"></div></div>
-      <details><summary>Tablo olarak göster</summary><div class="table-scroll" id="ay-tablo"></div></details>
+      <details open><summary>Aylık tablo (kümülatif toplamla)</summary><div class="table-scroll" id="ay-tablo"></div></details>
     </div>
 
     <div class="card">
       <h2>Gelecek fatura dönemleri <span class="badge">her yeni veriyle yeniden hesaplanır</span></h2>
       <p class="hint">Bilinen günler için gerçek sayaç verisi, bilinmeyen günler için cihaz planı kullanılır. Enerji fiyatı = max(düşük tarife, (PTF + YEKDEM) × K × kalibrasyon). Vergiler: ETV %5 (enerji bedeli üzerinden) + KDV %10.</p>
       <div class="table-scroll" id="donem-tablo"></div>
+    </div>
+
+    <div class="card">
+      <details><summary>ℹ️ Notlar ve kaynaklar</summary>
+        <ul class="hint" style="padding-left:18px;margin:0;display:grid;gap:6px">
+          <li><b>Tüketim:</b> takvim ayları ADM Elektrik Dağıtım verisinden; fatura dönemleri Aydem e-Arşiv faturalarından.</li>
+          <li><b>Fiyatlar:</b> PTF her sabah <a href="https://www.epias.com.tr/" target="_blank" rel="noopener" style="color:var(--accent)">EPİAŞ</a> günlük bülteninden otomatik güncellenir. YEKDEM'i EPDK yayınlar; yeni değer çıkınca Fiyatlar & Ayarlar sayfasından girin. Son kaynak katsayısı (K) mesken için 1,05.</li>
+          <li><b>Doğrulama:</b> uygulama Ağustos 2026 faturasını kuruşu kuruşuna hesaplıyor (3.462,88 TL yuvarlamasız).</li>
+          <li><b>Klimalar:</b> tam modeller bulunamadığı için güçler tahmindir (ısıtırken ortalama). Yukarıdaki “sayaçla ölç” ile gerçek değeri bulabilirsiniz.</li>
+          <li><b>Eski Excel'deki hata:</b> elektrikli battaniye günde 6 kWh sayılıyordu; doğrusu 56 W × 6 saat = 0,34 kWh/gün. Burada düzeltildi.</li>
+          <li><b>Limit kuralı:</b> önceki ya da içinde bulunulan takvim yılında 4.000 kWh aşılırsa son kaynak tarifesi uygulanır.</li>
+        </ul>
+      </details>
     </div>
   </section>
 
@@ -558,6 +592,8 @@ function renderOzet(){
   $('fiyat-note').innerHTML = `Kalibrasyon: ×${fmt(kalibrasyon(),3)} (son faturalardaki gerçek fiyat ÷ formül). PTF son 3 ay yıllık değişim: ${_trend>=1?'+':''}${fmt((_trend-1)*100,1)}%. Her 1 kWh tasarruf, sıradaki dönemde yaklaşık <b>${ilk? fmt(ilk.brutNet,2):'—'} TL</b> eder.`;
 
   renderChart(o, yil);
+  renderKis(ds, sf);
+  renderKlima(ilk);
   // gelecek dönemler tablosu
   let rows='';
   for(const d of ds){
@@ -570,6 +606,49 @@ function renderOzet(){
   $('donem-tablo').innerHTML = `<table><thead><tr><th>Fatura</th><th>Dönem</th><th>Tahmini kWh</th><th>Geçen yıl kWh</th><th>Enerji TL/kWh</th><th>Fatura TL</th><th>Ödenecek ≈</th><th>Brüt TL/kWh</th></tr></thead><tbody>${rows}</tbody></table>`;
   tahminKaydet();
 }
+
+function brutBirim(ebf){ const p=P(); return (ebf*(1+p.etv)+p.dag)*(1+p.kdv); }
+function renderKis(ds, sf){
+  const p=P();
+  const kis = ds.filter(d=>['12','01','02'].includes(n2d(d.b).slice(5,7))).slice(0,3).map(d=>({d, ebf:enerjiFiyatTahmin(d.a,d.b)}));
+  if(!kis.length){ $('kis-tiles').innerHTML='<p class="hint">Kış dönemi tahmini yok.</p>'; return; }
+  const lo=Math.min(...kis.map(k=>k.ebf)), hi=Math.max(...kis.map(k=>k.ebf));
+  const rng=(a,b,d)=> Math.abs(a-b)<0.0005? fmt(a,d) : `${fmt(a,d)} – ${fmt(b,d)}`;
+  $('kis-tiles').innerHTML = `
+    <div class="tile"><div class="lbl">Enerji bedeli</div><div class="val">${rng(lo,hi,2)}</div><div class="sub">TL/kWh · ${kis.map(k=>donemLabel(k.d.donem)).join(', ')}</div></div>
+    <div class="tile"><div class="lbl">Dağıtım bedeli</div><div class="val">${fmt(p.dag,4)}</div><div class="sub">TL/kWh</div></div>
+    <div class="tile"><div class="lbl">Vergiler</div><div class="val">%${fmt(p.etv*100,0)} + %${fmt(p.kdv*100,0)}</div><div class="sub">ETV (enerji üzerinden) + KDV</div></div>
+    <div class="tile hi"><div class="lbl">Brüt kWh maliyeti</div><div class="val">${rng(brutBirim(lo),brutBirim(hi),2)} TL</div><div class="sub">kış dönemleri tahmini</div></div>
+    <div class="tile"><div class="lbl">Kontrol: son fatura</div><div class="val">${sf&&sf.odenecek? fmt(sf.odenecek/sf.kwh,2)+' TL':'—'}</div><div class="sub">${sf? donemLabel(sf.donem)+' gerçek brüt':''}</div></div>`;
+}
+function renderKlima(ilk){
+  const brut = ilk ? ilk.brutNet : brutBirim(enerjiFiyatTahmin(todayN(),todayN()+30));
+  const list = Object.entries(cihazlar).filter(([k,c])=>/klima/i.test(c.ad||'')).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0));
+  const mi = new Date().getMonth();
+  $('klima-tablo').innerHTML = list.length ? `<table><thead><tr><th>Klima</th><th>Güç (W)</th><th>Kaynak</th><th>Günde 1 saat → ay (kWh)</th><th>Günde 1 saat → ay (TL)</th><th>${AYLAR_UZUN[mi]} planı (saat/gün)</th><th>${AYLAR_UZUN[mi]} planı (TL/ay)</th></tr></thead><tbody>${
+    list.map(([k,c])=>{ const kwhAy=(+c.guc||0)/1000*30*(c.adet??1); const plan=(c.aylik&&c.aylik[mi])||0;
+      return `<tr><td>${esc(c.ad)}</td><td>${fmt0(+c.guc||0)}</td><td>${c.kaynak==='olculen'?'ölçülen':'<span class="diff-mid">tahmin</span>'}</td><td>${fmt(kwhAy,1)}</td><td><b>${fmt0(kwhAy*brut)}</b></td><td>${c.mod==='kwh'?'—':fmt(plan,1)}</td><td>${fmt0(cihazGunluk(c,mi)*30*brut)}</td></tr>`; }).join('')
+    }</tbody></table><p class="hint" style="margin-top:8px">TL hesabı sıradaki faturanın brüt kWh maliyetiyle (${fmt(brut,2)} TL) yapılır.</p>` : '<p class="hint">Adında “Klima” geçen cihaz yok.</p>';
+  // ölçüm cihaz listesi
+  const sel=$('olc-cihaz'); const cur=sel.value;
+  sel.innerHTML = Object.entries(cihazlar).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0)).map(([k,c])=>`<option value="${k}">${esc(c.ad)}</option>`).join('');
+  if(cur && cihazlar[cur]) sel.value=cur; else { const kk=list[0]; if(kk) sel.value=kk[0]; }
+  olcHesap();
+}
+let _olcW=null;
+function olcHesap(){
+  const a=parseFloat($('olc-ilk').value), b=parseFloat($('olc-son').value), dk=parseFloat($('olc-dk').value);
+  _olcW=null; $('olc-uygula').disabled=true;
+  if(isNaN(a)||isNaN(b)||isNaN(dk)||dk<=0||b<=a){ $('olc-sonuc').textContent='Başlangıç ve bitiş endeksi ile süreyi girin.'; return; }
+  _olcW = (b-a)/(dk/60)*1000;
+  $('olc-sonuc').innerHTML = `Ortalama güç: <b>${fmt0(_olcW)} W</b> (${fmt(b-a,3)} kWh / ${fmt0(dk)} dk)`;
+  $('olc-uygula').disabled=false;
+}
+['olc-ilk','olc-son','olc-dk'].forEach(id=>$(id).addEventListener('input',olcHesap));
+$('olc-uygula').addEventListener('click',()=>{
+  const k=$('olc-cihaz').value; const c=cihazlar[k]; if(!c||_olcW===null) return;
+  db.ref(`${ROOT}/cihazlar/${k}`).update({guc:Math.round(_olcW), kaynak:'olculen'}).then(()=>{ toast(`${c.ad}: güç ${fmt0(_olcW)} W olarak kaydedildi.`); ['olc-ilk','olc-son'].forEach(i=>$(i).value=''); olcHesap(); });
+});
 
 function renderChart(o, yil){
   const svg=$('chart'); const W = svg.clientWidth||700, H=240, padL=44, padB=26, padT=12, padR=8;
@@ -627,7 +706,7 @@ function renderCihazOzet(){
 }
 function renderCihazTablo(){
   const mi = seciliAy();
-  $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th>${AYLAR.map((a,i)=>`<th class="${i===mi?'cur':''}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>`;
+  $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th><th>Ay değerleri</th>${AYLAR.map((a,i)=>`<th class="${i===mi?'cur':''}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>`;
   const keys = Object.keys(cihazlar).sort((a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0));
   $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
     return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
@@ -636,6 +715,7 @@ function renderCihazTablo(){
       <td><input class="m" type="number" data-f="adet" value="${c.adet??1}" step="1" min="0"></td>
       <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
       <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
+      <td class="unit-cell" style="color:var(--muted);font-size:.78rem">${c.mod==='kwh'?'kWh / gün':'saat / gün'}</td>
       ${AYLAR.map((a,i)=>`<td class="${i===mi?'cur':''}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
       <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*30.4,1)}</td>
       <td><button class="icon-btn" data-act="fill" title="Seçili ayın değerini tüm aylara kopyala">⇉</button><button class="icon-btn" data-act="del" title="Sil">🗑️</button></td></tr>`; }).join('');
@@ -647,6 +727,7 @@ $('dev-body').addEventListener('input', e=>{
   if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : parseFloat(e.target.value)||0; }
   else if (m!==undefined){ c.aylik = c.aylik||Array(12).fill(0); c.aylik[+m] = parseFloat(e.target.value)||0; }
   tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*30.4,1);
+  tr.querySelector('.unit-cell').textContent = c.mod==='kwh' ? 'kWh / gün' : 'saat / gün';
   renderCihazOzet();
   $('save-badge').textContent='kaydediliyor…';
   clearTimeout(_devTimers[k]); _devTimers[k]=setTimeout(()=>{ db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>{$('save-badge').textContent='kaydedildi ✓';}); },700);
