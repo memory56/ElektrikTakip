@@ -1,0 +1,27 @@
+name: PTF fiyatlarını güncelle
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # her gün 09:17 (TSİ)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  guncelle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: pdftotext kur
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+      - name: Bülteni oku, prices.json güncelle
+        run: python3 scripts/fiyat_guncelle.py
+      - name: Değişiklik varsa kaydet
+        run: |
+          if git diff --quiet -- prices.json; then echo "Değişiklik yok"; exit 0; fi
+          git config user.name "fiyat-botu"
+          git config user.email "actions@users.noreply.github.com"
+          git add prices.json
+          git commit -m "PTF fiyatları güncellendi ($(date +%F))"
+          git push

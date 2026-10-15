@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
+<title>Elektrik Takip</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<!-- apple-mobile-web-app-capable bilinçli olarak yok: iOS standalone modda Google girişi
+     ayrı depolama yüzünden çalışmıyor (Su Faturası'ndaki ile aynı karar). -->
+<meta name="apple-mobile-web-app-title" content="Elektrik">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --bg:#0f172a; --panel:#1e293b; --panel2:#273449; --border:#33455e;
+    --text:#e6edf5; --muted:#93a3b8; --accent:#3aa0ff; --accent2:#22c58f;
+    --warn:#f2b84b; --danger:#ef5a6f; --input-bg:#0f1c2e;
+    --s-actual:#3987e5; --s-plan:#d95926;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:linear-gradient(160deg,#0b1220,#111d33 60%,#0b1220);color:var(--text);min-height:100vh;}
+  header{padding:calc(18px + env(safe-area-inset-top)) 16px 4px;text-align:center;}
+  header h1{margin:0;font-size:1.45rem;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:.85rem;}
+  .userbar{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:6px;font-size:.78rem;color:var(--muted);}
+  .wrap{max-width:1100px;margin:0 auto;padding:8px 14px calc(60px + env(safe-area-inset-bottom));}
+  nav.tabs{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:10px 0 16px;position:sticky;top:0;z-index:5;
+    padding:8px 0;background:rgba(11,18,32,.92);backdrop-filter:blur(6px);}
+  nav.tabs button{background:var(--panel);border:1px solid var(--border);color:var(--muted);padding:9px 14px;border-radius:999px;
+    font-size:.88rem;font-weight:600;cursor:pointer;}
+  nav.tabs button.on{background:var(--accent);color:#04121f;border-color:var(--accent);}
+  .page{display:none;} .page.on{display:block;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px;box-shadow:0 6px 24px rgba(0,0,0,.25);}
+  .card h2{margin:0 0 12px;font-size:1.02rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .card h2 .badge{font-size:.7rem;background:var(--panel2);color:var(--muted);padding:2px 8px;border-radius:20px;font-weight:500;}
+  .hint{color:var(--muted);font-size:.8rem;line-height:1.45;margin:0 0 10px;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;}
+  label{font-size:.76rem;color:var(--muted);display:block;margin-bottom:4px;}
+  input[type=text],input[type=number],input[type=date],input[type=month],select{
+    width:100%;padding:9px 10px;border-radius:9px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-size:.92rem;outline:none;}
+  input:focus,select:focus{border-color:var(--accent);}
+  .field{display:flex;flex-direction:column;}
+  .btn{appearance:none;border:none;cursor:pointer;border-radius:10px;padding:10px 16px;font-size:.9rem;font-weight:600;color:#04121f;background:var(--accent2);}
+  .btn.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--border);}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+  .btn:active{transform:scale(.98);}
+  .btn-row{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;}
+  .tile{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:10px 12px;}
+  .tile .lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}
+  .tile .val{font-size:1.25rem;font-weight:700;margin-top:3px;}
+  .tile .sub{font-size:.74rem;color:var(--muted);margin-top:2px;}
+  .tile.good .val{color:var(--accent2);} .tile.warn .val{color:var(--warn);} .tile.bad .val{color:var(--danger);} .tile.hi .val{color:var(--accent);}
+  .up{color:var(--danger);} .down{color:var(--accent2);}
+  table{width:100%;border-collapse:collapse;font-size:.8rem;}
+  thead th{position:sticky;top:0;background:var(--panel2);color:var(--muted);font-weight:600;text-align:right;padding:7px 7px;white-space:nowrap;border-bottom:1px solid var(--border);z-index:1;}
+  thead th:first-child,tbody td:first-child{text-align:left;}
+  tbody td{padding:6px 7px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+  tbody tr:hover{background:rgba(255,255,255,.03);}
+  tr.past td{color:var(--muted);}
+  .table-scroll{overflow:auto;max-height:min(62vh,620px);border-radius:10px;}
+  .icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:.95rem;padding:2px 5px;border-radius:6px;}
+  .icon-btn:hover{background:var(--panel2);color:var(--text);}
+  .diff-ok{color:var(--accent2);} .diff-bad{color:var(--danger);} .diff-mid{color:var(--warn);}
+  /* cihaz tablosu */
+  #dev-table input,#dev-table select{padding:6px 6px;font-size:.82rem;border-radius:7px;}
+  #dev-table td{padding:4px 4px;}
+  #dev-table input.m{width:58px;text-align:right;}
+  #dev-table input.n{width:70px;text-align:right;}
+  #dev-table input.name{width:170px;}
+  #dev-table select{min-width:100px;}
+  #dev-table td.sticky,#dev-table th.sticky{position:sticky;left:0;background:var(--panel);z-index:2;}
+  #dev-table th.sticky{background:var(--panel2);z-index:3;}
+  #dev-table th.cur,#dev-table td.cur{background:rgba(58,160,255,.10);}
+  .bars .row{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;margin:5px 0;font-size:.82rem;}
+  .bars .track{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden;}
+  .bars .fill{height:100%;background:var(--s-actual);border-radius:0 4px 4px 0;}
+  .bars .fill.est{background:var(--s-plan);}
+  .bars .v{text-align:right;color:var(--muted);}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin:6px 0 4px;}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px;}
+  #chart-wrap{position:relative;}
+  #chart-tip{position:absolute;pointer-events:none;background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:.78rem;display:none;white-space:nowrap;z-index:4;}
+  .progress{height:14px;background:var(--panel2);border-radius:8px;overflow:hidden;position:relative;margin:8px 0 4px;}
+  .progress .a{position:absolute;left:0;top:0;bottom:0;background:var(--s-actual);}
+  .progress .p{position:absolute;top:0;bottom:0;background:var(--s-plan);opacity:.85;}
+  .progress .lim{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--text);}
+  #auth-overlay{position:fixed;inset:0;background:rgba(6,10,20,.94);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:50;text-align:center;padding:20px;}
+  #auth-overlay p{color:var(--muted);max-width:340px;margin:0;font-size:.85rem;}
+  #toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--panel2);border:1px solid var(--border);
+    padding:10px 16px;border-radius:10px;font-size:.85rem;display:none;z-index:60;max-width:92vw;}
+  details summary{cursor:pointer;color:var(--muted);font-size:.85rem;margin:4px 0 10px;user-select:none;}
+  .cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px;}
+  .cmp .col{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:10px 12px;font-size:.82rem;}
+  .cmp .col h4{margin:0 0 6px;font-size:.8rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .cmp .col div{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
+  .cmp .col b{font-weight:700;}
+  @media (max-width:600px){ .bars .row{grid-template-columns:105px 1fr 92px;} }
+</style>
+</head>
+<body>
+
+<div id="auth-overlay">
+  <h2>⚡ Elektrik Takip</h2>
+  <p>Verileriniz Google hesabınızla giriş yapılarak bulutta saklanır. Devam etmek için giriş yapın.</p>
+  <button class="btn" id="google-signin-btn">Google ile Giriş Yap</button>
+  <p id="auth-status-line" style="min-height:16px;font-size:.78rem"></p>
+</div>
+
+<header>
+  <h1>⚡ Elektrik Takip</h1>
+  <p>Cihaz planından fatura tahmini · gerçek faturayla karşılaştırma · yıllık 4.000 kWh takibi</p>
+  <div class="userbar" id="userbar" style="display:none"><span id="user-email"></span> · <button class="icon-btn" id="signout-btn">Çıkış yap</button></div>
+</header>
+
+<div class="wrap">
+  <nav class="tabs">
+    <button data-p="ozet" class="on">Özet</button>
+    <button data-p="cihaz">Cihazlar</button>
+    <button data-p="fatura">Faturalar</button>
+    <button data-p="fiyat">Fiyatlar & Ayarlar</button>
+  </nav>
+
+  <!-- ================= ÖZET ================= -->
+  <section class="page on" id="p-ozet">
+    <div class="card">
+      <h2>Yıllık limit <span class="badge" id="yil-badge"></span>
+        <select id="yil-sec" style="width:auto;margin-left:auto;padding:5px 8px;font-size:.82rem"></select></h2>
+      <div class="tiles" id="limit-tiles"></div>
+      <div class="progress" id="limit-bar"></div>
+      <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen</span><span><i style="background:var(--s-plan)"></i>Plan / tahmin</span><span><i style="background:var(--text);width:3px"></i>Limit</span></div>
+      <p class="hint" id="limit-note"></p>
+    </div>
+
+    <div class="card">
+      <h2>Fiyat durumu <span class="badge" id="fiyat-badge"></span></h2>
+      <div class="tiles" id="fiyat-tiles"></div>
+      <p class="hint" id="fiyat-note" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <h2>Aylık tüketim (takvim ayı)</h2>
+      <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen (sayaç/fatura)</span><span><i style="background:var(--s-plan)"></i>Cihaz planına göre tahmin</span></div>
+      <div id="chart-wrap"><svg id="chart" width="100%" height="240" role="img" aria-label="Aylık tüketim grafiği"></svg><div id="chart-tip"></div></div>
+      <details><summary>Tablo olarak göster</summary><div class="table-scroll" id="ay-tablo"></div></details>
+    </div>
+
+    <div class="card">
+      <h2>Gelecek fatura dönemleri <span class="badge">her yeni veriyle yeniden hesaplanır</span></h2>
+      <p class="hint">Bilinen günler için gerçek sayaç verisi, bilinmeyen günler için cihaz planı kullanılır. Enerji fiyatı = max(düşük tarife, (PTF + YEKDEM) × K × kalibrasyon). Vergiler: ETV %5 (enerji bedeli üzerinden) + KDV %10.</p>
+      <div class="table-scroll" id="donem-tablo"></div>
+    </div>
+  </section>
+
+  <!-- ================= CİHAZLAR ================= -->
+  <section class="page" id="p-cihaz">
+    <div class="card">
+      <h2>Ay seçin → cihaz bazında tüketim
+        <select id="ay-sec" style="width:auto;margin-left:auto;padding:5px 8px;font-size:.82rem"></select></h2>
+      <div class="tiles" id="cihaz-tiles"></div>
+      <div class="bars" id="cihaz-bars" style="margin-top:12px"></div>
+      <div class="legend"><span><i style="background:var(--s-actual)"></i>Akıllı prizle ölçülen</span><span><i style="background:var(--s-plan)"></i>Tahmini değer</span></div>
+    </div>
+
+    <div class="card">
+      <h2>Cihaz planı <span class="badge" id="save-badge">otomatik kaydedilir</span></h2>
+      <p class="hint"><b>Ölçüm</b>: “W × saat” seçilirse ay sütunlarına <b>günde kaç saat</b> çalıştığını, “kWh/gün” seçilirse akıllı prizden okunan <b>günlük kWh</b> değerini yazın. <b>Gün/hafta</b>: cihaz haftada kaç gün kullanılıyor (her gün = 7). Klimalar için güç, ısıtırken/soğuturken ortalama çekilen değerdir.</p>
+      <div class="table-scroll" style="max-height:none">
+        <table id="dev-table"><thead id="dev-head"></thead><tbody id="dev-body"></tbody></table>
+      </div>
+      <div class="btn-row">
+        <button class="btn secondary" id="dev-add">+ Cihaz ekle</button>
+        <span class="hint" style="margin:0">Seçili ay sütunu mavi ile vurgulanır. Bir satırdaki değeri tüm aylara kopyalamak için ⇉ düğmesini kullanın.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FATURALAR ================= -->
+  <section class="page" id="p-fatura">
+    <div class="card">
+      <h2>Fatura ekle</h2>
+      <p class="hint"><b>En kolayı:</b> Aydem'in e-posta ile gönderdiği e-Arşiv faturasındaki <b>.xml</b> ekini indirip aşağıdan seçin — endeksler, tarihler, kWh, birim fiyatlar ve tutar otomatik dolar. Birden fazla XML aynı anda seçilebilir.</p>
+      <div class="btn-row" style="margin-top:0">
+        <label class="btn" style="margin:0;color:#04121f;font-size:.9rem">📄 Fatura XML yükle<input type="file" id="xml-input" accept=".xml,text/xml" multiple style="display:none"></label>
+      </div>
+      <details id="manual-details" style="margin-top:12px"><summary>…ya da elle girin</summary>
+        <div class="grid">
+          <div class="field"><label>Fatura dönemi (ay)</label><input type="month" id="f-donem"></div>
+          <div class="field"><label>İlk okuma tarihi</label><input type="date" id="f-ilkt"></div>
+          <div class="field"><label>Son okuma tarihi</label><input type="date" id="f-sont"></div>
+          <div class="field"><label>İlk endeks (toplam)</label><input type="number" id="f-ilke" step="0.001" inputmode="decimal"></div>
+          <div class="field"><label>Son endeks (toplam)</label><input type="number" id="f-sone" step="0.001" inputmode="decimal"></div>
+          <div class="field"><label>Tüketim (kWh)</label><input type="number" id="f-kwh" step="0.001" inputmode="decimal"></div>
+          <div class="field"><label>Enerji birim fiyatı (TL/kWh)</label><input type="number" id="f-ebf" step="0.000001" inputmode="decimal"></div>
+          <div class="field"><label>Dağıtım birim fiyatı (TL/kWh)</label><input type="number" id="f-dbf" step="0.000001" inputmode="decimal"></div>
+          <div class="field"><label>Ödenecek tutar (TL)</label><input type="number" id="f-tutar" step="0.01" inputmode="decimal"></div>
+        </div>
+        <div id="f-live"></div>
+        <div class="btn-row"><button class="btn" id="f-save">Kaydet</button><button class="btn ghost" id="f-clear">Temizle</button></div>
+      </details>
+    </div>
+
+    <div class="card" id="son-fatura-card" style="display:none">
+      <h2>Son fatura karşılaştırması <span class="badge" id="son-fatura-badge"></span></h2>
+      <div class="cmp" id="son-fatura-cmp"></div>
+    </div>
+
+    <div class="card">
+      <h2>Fatura geçmişi</h2>
+      <p class="hint"><b>Brüt kWh</b> = ödenecek tutar ÷ kWh (enerji + dağıtım + vergiler dahil gerçek maliyet). <b>Hesap</b> = uygulamanın faturadaki birim fiyatlarla hesapladığı tutar (doğrulama). <b>Tahmin</b> = o dönem için uygulamanın önceden yaptığı ilk/son tahmin.</p>
+      <div class="table-scroll" id="fatura-tablo"></div>
+    </div>
+  </section>
+
+  <!-- ================= FİYATLAR & AYARLAR ================= -->
+  <section class="page" id="p-fiyat">
+    <div class="card">
+      <h2>Tarife parametreleri</h2>
+      <p class="hint">Boş bırakılan alanlar son faturadan / otomatik fiyat dosyasından alınır.</p>
+      <div class="grid">
+        <div class="field"><label>Dağıtım bedeli (TL/kWh)</label><input type="number" id="s-dag" step="0.0001" placeholder="otomatik"></div>
+        <div class="field"><label>Düşük tarife enerji bedeli – taban (TL/kWh)</label><input type="number" id="s-taban" step="0.0001" placeholder="otomatik"></div>
+        <div class="field"><label>Son kaynak katsayısı K</label><input type="number" id="s-k" step="0.0001" placeholder="otomatik"></div>
+        <div class="field"><label>Kalibrasyon (boş = otomatik)</label><input type="number" id="s-kal" step="0.001" placeholder="otomatik"></div>
+        <div class="field"><label>Yıllık limit (kWh)</label><input type="number" id="s-limit" step="1"></div>
+        <div class="field"><label>ETV oranı (%)</label><input type="number" id="s-etv" step="0.01"></div>
+        <div class="field"><label>KDV oranı (%)</label><input type="number" id="s-kdv" step="0.01"></div>
+      </div>
+      <div class="btn-row"><button class="btn secondary" id="s-save">Ayarları kaydet</button><span class="hint" id="kal-info" style="margin:0"></span></div>
+    </div>
+
+    <div class="card">
+      <h2>Aylık PTF ve YEKDEM <span class="badge" id="ptf-badge"></span></h2>
+      <p class="hint">PTF (piyasa takas fiyatı) her gün EPİAŞ bülteninden otomatik güncellenir. YEKDEM'i EPDK yayınlar; yeni değer açıklanınca ilgili ayın kutusuna yazıp kaydedin. İtalik değerler tahmindir (geçen yılın aynı ayı × son 3 ayın yıllık değişimi).</p>
+      <div class="table-scroll" id="ptf-tablo"></div>
+      <div class="btn-row"><button class="btn secondary" id="yek-save">YEKDEM değerlerini kaydet</button></div>
+    </div>
+
+    <div class="card">
+      <h2>Takvim ayı sayaç verisi</h2>
+      <p class="hint">Aydem / ADM'den alınan aylık tüketim (kWh). Yıllık 4.000 kWh hesabı takvim yılına göre yapıldığı için en doğru kaynak budur. Bir ay girilmemişse fatura dönemlerinden gün oranıyla hesaplanır.</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+        <div class="field"><label>Ay</label><input type="month" id="sy-ay"></div>
+        <div class="field"><label>Tüketim (kWh)</label><input type="number" id="sy-kwh" step="0.01"></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="sy-save">Ekle / güncelle</button></div>
+      </div>
+      <div class="table-scroll" id="sayac-tablo" style="margin-top:10px;max-height:300px"></div>
+    </div>
+  </section>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ======================= Firebase ======================= */
+const firebaseApp = firebase.initializeApp({
+  apiKey: "AIzaSyBmH5WsehTsA55yMSWLfpzPjtm-TGXoLAI",
+  authDomain: "amerikano-b037f.firebaseapp.com",
+  databaseURL: "https://amerikano-b037f-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "amerikano-b037f",
+  storageBucket: "amerikano-b037f.firebasestorage.app",
+  messagingSenderId: "579047493957",
+  appId: "1:579047493957:web:53bf80388ad14b268bae2c"
+});
+const auth = firebase.auth(firebaseApp);
+const provider = new firebase.auth.GoogleAuthProvider();
+const db = firebase.database(firebaseApp);
+const ROOT = 'elektrik';
+
+/* ======================= Başlangıç verileri ======================= */
+// Aydem e-Arşiv faturalarından (Tem 2025 – Ağu 2026). Endeks = T1+T2+T3 toplamı.
+const SEED_FATURALAR = [
+ ['2025-07','2025-06-17','2025-07-16',29284.558,29693.432,408.874,null,1.836166,750.76,19.57,116.17,1277.89,1280],
+ ['2025-08','2025-07-17','2025-08-19',29693.432,30267.822,574.390,null,1.836166,1054.68,31.14,170.87,1879.57,1880],
+ ['2025-09','2025-08-20','2025-09-16',30267.822,30452.475,184.653,null,1.836166,339.05,4.56,43.49,478.34,480],
+ ['2025-10','2025-09-17','2025-10-17',30452.475,30709.243,256.768,null,1.836166,471.47,6.84,61.50,676.51,680],
+ ['2025-11','2025-10-18','2025-11-18',30709.243,31049.828,340.585,null,1.836166,625.37,13.16,90.17,991.82,990],
+ ['2025-12','2025-11-19','2025-12-16',31049.828,31297.096,247.268,null,1.836166,454.03,7.41,60.97,670.67,670],
+ ['2026-01','2025-12-17','2026-01-17',31297.096,31836.124,539.028,null,1.836166,989.74,60.71,226.46,2491.01,2490],
+ ['2026-02','2026-01-18','2026-02-17',31836.124,32193.301,357.177,2.977623,1.836166,655.84,53.18,177.26,1949.81,1950],
+ ['2026-03','2026-02-18','2026-03-16',32193.301,32576.538,383.237,2.419218,1.836166,703.69,46.36,167.72,1844.90,1840],
+ ['2026-04','2026-03-17','2026-04-15',32576.538,33057.770,481.232,1.892413,2.061847,992.22,45.54,194.85,2143.31,2150],
+ ['2026-05','2026-04-16','2026-05-15',33057.770,33328.342,270.572,1.895808,2.4249,656.11,25.65,119.47,1314.18,1310],
+ ['2026-06','2026-05-16','2026-06-17',33328.342,33490.732,162.390,1.950621,2.4249,393.78,15.84,72.64,799.02,800],
+ ['2026-07','2026-06-18','2026-07-17',33490.732,33931.785,441.053,2.704385,2.4249,1069.51,59.64,232.19,2554.12,2550],
+ ['2026-08','2026-07-18','2026-08-19',33931.785,34451.161,519.376,3.463210,2.4249,1259.43,89.94,314.81,3462.88,3470]
+];
+// ADM Elektrik Dağıtım takvim ayı verileri
+const SEED_SAYAC = {
+ '2025-01':623.85,'2025-02':528.83,'2025-03':649.80,'2025-04':595.65,'2025-05':250.21,'2025-06':301.13,
+ '2025-07':408.87,'2025-08':574.39,'2025-09':184.65,'2025-10':256.77,'2025-11':340.59,'2025-12':247.27,
+ '2026-01':539.03,'2026-02':357.18,'2026-03':383.24,'2026-04':481.23,'2026-05':270.57,'2026-06':162.39,
+ '2026-07':441.05,'2026-08':519.38,'2026-09':310.85
+};
+// "Elektrik Sarfiyat 1.xlsx" Sarfiyat/Detay sayfalarından; aylık değerler mevsime göre ilk tahmin.
+// aylik: Oca..Ara — mod 'saat' ise saat/gün, 'kwh' ise kWh/gün
+function S(a){return a;}
+const SEED_CIHAZLAR = [
+ {ad:'Buzdolabı',mod:'saat',guc:100,adet:1,gh:7,kaynak:'olculen',aylik:S([4.4,4.4,4.4,4.4,4.4,4.4,4.4,4.4,4.4,4.4,4.4,4.4])},
+ {ad:'Dondurucu',mod:'saat',guc:70,adet:1,gh:7,kaynak:'olculen',aylik:S([3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1,3.1])},
+ {ad:'Çamaşır makinesi',mod:'saat',guc:920,adet:1,gh:2,kaynak:'olculen',aylik:S([2,2,2,2,2,2,2,2,2,2,2,2])},
+ {ad:'Bulaşık makinesi',mod:'saat',guc:610,adet:1,gh:3,kaynak:'olculen',aylik:S([2,2,2,2,2,2,2,2,2,2,2,2])},
+ {ad:'TV',mod:'saat',guc:100,adet:1,gh:7,kaynak:'olculen',aylik:S([8,8,8,8,8,8,8,8,8,8,8,8])},
+ {ad:'Mikrodalga',mod:'saat',guc:800,adet:1,gh:7,kaynak:'olculen',aylik:S([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1])},
+ {ad:'Kettle',mod:'saat',guc:1650,adet:1,gh:7,kaynak:'olculen',aylik:S([0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1])},
+ {ad:'Elektrikli ocak',mod:'kwh',guc:1800,adet:1,gh:7,kaynak:'olculen',aylik:S([0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4,0.4])},
+ {ad:'Fırın',mod:'saat',guc:2500,adet:1,gh:1,kaynak:'olculen',aylik:S([0,0,0,0,0,0,0,0,0,0,0,0])},
+ {ad:'Süpürge',mod:'saat',guc:2000,adet:1,gh:2,kaynak:'olculen',aylik:S([0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3,0.3])},
+ {ad:'Termosifon',mod:'kwh',guc:1730,adet:1,gh:7,kaynak:'olculen',aylik:S([2.6,2.6,2.6,2.6,1.5,1.5,1.5,1.5,1.5,1.5,2.6,2.6])},
+ {ad:'Halı ısıtıcı',mod:'kwh',guc:1000,adet:1,gh:7,kaynak:'olculen',aylik:S([5,4,2,1,0,0,0,0,0,0,2,2])},
+ {ad:'Havlupan',mod:'kwh',guc:677,adet:1,gh:7,kaynak:'olculen',aylik:S([1.5,1.5,1,0.5,0,0,0,0,0,0,1,1])},
+ {ad:'Isıtıcı (fanlı)',mod:'kwh',guc:1775,adet:1,gh:7,kaynak:'olculen',aylik:S([1,0.5,0,0,0,0,0,0,0,0,0,0])},
+ {ad:'Elektrikli battaniye',mod:'saat',guc:56,adet:1,gh:7,kaynak:'olculen',aylik:S([6,6,6,3,0,0,0,0,0,0,6,6])},
+ {ad:'Klima 1 – Arçelik Invertech 18000',mod:'saat',guc:1200,adet:1,gh:7,kaynak:'tahmin',aylik:S([4,3,2,1,0,2,5,6,2,1,2,2])},
+ {ad:'Klima 2 – GE SmartSense 9000',mod:'saat',guc:750,adet:1,gh:7,kaynak:'tahmin',aylik:S([0,0,0,0,0,1,2,3,1,0,0,0])},
+ {ad:'Klima 3 – Vestel BIOX melez 9000',mod:'saat',guc:700,adet:1,gh:7,kaynak:'tahmin',aylik:S([0,0,0,0,0,1,2,3,1,0,0,0])},
+ {ad:'Veranda sistemi',mod:'saat',guc:10,adet:1,gh:7,kaynak:'olculen',aylik:S([24,24,24,24,24,24,24,24,24,24,24,24])},
+ {ad:'Bahçe ışığı (LED)',mod:'saat',guc:40,adet:2,gh:7,kaynak:'tahmin',aylik:S([5,5,4,4,3,3,3,3,4,4,5,5])},
+ {ad:'Ev aydınlatması (LED)',mod:'saat',guc:24,adet:4,gh:7,kaynak:'tahmin',aylik:S([5,5,4,4,3,3,3,3,4,4,5,5])}
+];
+
+/* ======================= Durum ======================= */
+let cihazlar = {}, faturalar = {}, sayac = {}, ayarlar = {}, tahminler = {};
+let prices = null;
+let loaded = {cihaz:false,fatura:false,sayac:false,ayar:false,tahmin:false};
+const AYLAR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+const AYLAR_UZUN = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+/* ======================= Yardımcılar ======================= */
+const $ = id => document.getElementById(id);
+function fmt(n,d=2){ if(n===null||n===undefined||isNaN(n)) return '—'; return n.toLocaleString('tr-TR',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function fmt0(n){ return fmt(n,0); }
+function round2(n){ return Math.round((n+Number.EPSILON)*100)/100; }
+function parseTR(s){ if(s===undefined||s===null) return NaN; s=String(s).trim().replace(/-$/,''); if(!s) return NaN; return parseFloat(s.replace(/\./g,'').replace(',','.')); }
+// tarih: 'YYYY-MM-DD' (UTC gün sayısıyla çalışılır)
+function d2n(s){ const [y,m,d]=s.split('-').map(Number); return Date.UTC(y,m-1,d)/86400000; }
+function n2d(n){ const t=new Date(n*86400000); return t.toISOString().slice(0,10); }
+function ymOf(n){ return n2d(n).slice(0,7); }
+function dim(ym){ const [y,m]=ym.split('-').map(Number); return new Date(Date.UTC(y,m,0)).getUTCDate(); }
+function todayN(){ const t=new Date(); return Date.UTC(t.getFullYear(),t.getMonth(),t.getDate())/86400000; }
+function trDate(s){ if(!s) return '—'; const [y,m,d]=s.split('-'); return `${d}.${m}.${y}`; }
+function donemLabel(ym){ const [y,m]=ym.split('-'); return `${AYLAR[+m-1]} ${y}`; }
+function ymAdd(ym,k){ let [y,m]=ym.split('-').map(Number); m+=k; while(m>12){m-=12;y++;} while(m<1){m+=12;y--;} return `${y}-${String(m).padStart(2,'0')}`; }
+function median(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); const h=Math.floor(s.length/2); return s.length%2?s[h]:(s[h-1]+s[h])/2; }
+function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.style.color=err?'var(--danger)':'var(--text)'; t.style.display='block'; clearTimeout(toast._t); toast._t=setTimeout(()=>t.style.display='none',3500); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ======================= Parametreler ======================= */
+function P(){
+  const p = prices||{};
+  const sonF = sonFatura();
+  return {
+    K: num(ayarlar.K, p.katsayiK, 1.05),
+    taban: num(ayarlar.taban, p.dusukTarifeEnerji, 1.895808),
+    dag: num(ayarlar.dag, sonF && sonF.dagitimBF, p.dagitimBedeli, 2.4249),
+    etv: num(ayarlar.etv, p.etvOrani, 0.05),
+    kdv: num(ayarlar.kdv, p.kdvOrani, 0.10),
+    limit: num(ayarlar.limit, 4000)
+  };
+}
+function num(...v){ for(const x of v){ if(typeof x==='number' && !isNaN(x)) return x; } return NaN; }
+
+/* ======================= Tüketim modeli ======================= */
+function cihazGunluk(c, mi){
+  const v = +(c.aylik && c.aylik[mi]) || 0;
+  const adet = c.adet===undefined ? 1 : +c.adet;
+  const gh = c.gh===undefined ? 7 : +c.gh;
+  const base = c.mod==='kwh' ? v : (+c.guc||0)*v/1000;
+  return base*adet*gh/7;
+}
+function planGunluk(mi){ let s=0; for(const k in cihazlar) s+=cihazGunluk(cihazlar[k],mi); return s; }
+const _planCache = {};
+function planDay(n){ const mi = +n2d(n).slice(5,7)-1; return planGunluk(mi); }
+
+// Gerçek günlük tüketim: önce takvim ayı sayaç verisi, yoksa fatura dönemi
+let _invIndex = [];
+function buildInvIndex(){
+  _invIndex = Object.values(faturalar).filter(f=>f.ilkTarih&&f.sonTarih&&f.kwh>0)
+    .map(f=>({a:d2n(f.ilkTarih), b:d2n(f.sonTarih), k:f.kwh})).sort((x,y)=>x.a-y.a);
+}
+function actualDay(n){
+  const ym = ymOf(n);
+  if (sayac[ym]!==undefined && sayac[ym]!==null) return sayac[ym]/dim(ym);
+  for (const r of _invIndex){ if(n>=r.a && n<=r.b) return r.k/(r.b-r.a+1); }
+  return null;
+}
+function sonBilinenGun(){
+  let m = -Infinity;
+  for(const ym in sayac){ const e=d2n(ym+'-'+String(dim(ym)).padStart(2,'0')); if(e>m) m=e; }
+  for(const r of _invIndex){ if(r.b>m) m=r.b; }
+  return m;
+}
+
+/* ======================= Fiyat modeli ======================= */
+let _trend = 1;
+function hesaplaTrend(){
+  const pt = (prices&&prices.ptf)||{};
+  const keys = Object.keys(pt).sort();
+  const son = keys.slice(-3); let a=0,b=0;
+  for(const k of son){ const g=ymAdd(k,-12); if(pt[g]){ a+=pt[k]; b+=pt[g]; } }
+  _trend = (a>0&&b>0) ? a/b : 1;
+}
+function ptfAy(ym){
+  const pt=(prices&&prices.ptf)||{};
+  if (pt[ym]!==undefined) return {v:pt[ym], est:false};
+  const g = ymAdd(ym,-12);
+  if (pt[g]!==undefined) return {v:pt[g]*_trend, est:true};
+  if (ymAdd(ym,-24) in pt) return {v:pt[ymAdd(ym,-24)]*_trend*_trend, est:true};
+  const keys=Object.keys(pt).sort(); return {v: keys.length?pt[keys[keys.length-1]]:2500, est:true};
+}
+function yekdemAy(ym){
+  const u = ayarlar.yekdem||{}; if (typeof u[ym]==='number') return {v:u[ym],est:false};
+  const y=(prices&&prices.yekdem)||{}; if (typeof y[ym]==='number') return {v:y[ym],est:false};
+  const all = Object.assign({}, y, u); const keys=Object.keys(all).filter(k=>k<ym).sort();
+  return {v: keys.length?all[keys[keys.length-1]]:450, est:true};
+}
+function modelAy(ym){ return (ptfAy(ym).v + yekdemAy(ym).v) * P().K / 1000; }
+function modelDonem(a,b){ let s=0,n=0; for(let d=a; d<=b; d++){ s+=modelAy(ymOf(d)); n++; } return n? s/n : 0; }
+function kalibrasyonOto(){
+  const p=P(); const r=[];
+  const fs = Object.values(faturalar).filter(f=>f.enerjiBF && f.donem>='2026-02').sort((x,y)=>x.donem<y.donem?-1:1);
+  for(const f of fs){
+    if (Math.abs(f.enerjiBF-p.taban)/p.taban < 0.04) continue; // taban fiyata takılmış dönem
+    const m = modelDonem(d2n(f.ilkTarih), d2n(f.sonTarih)); if(m>0) r.push(f.enerjiBF/m);
+  }
+  const med = median(r.slice(-4));
+  return med===null ? 1 : Math.min(1.15, Math.max(0.85, med));
+}
+function kalibrasyon(){ return typeof ayarlar.kal==='number' ? ayarlar.kal : kalibrasyonOto(); }
+function enerjiFiyatTahmin(a,b){ const p=P(); return Math.max(p.taban, modelDonem(a,b)*kalibrasyon()); }
+
+/* ======================= Fatura hesabı ======================= */
+function faturaHesap(kwh, ebf, dbf){
+  const p=P();
+  const enerjiTL = kwh*ebf, dagTL = kwh*dbf, etv = enerjiTL*p.etv;
+  const ara = round2(enerjiTL)+round2(dagTL)+round2(etv);
+  const kdv = round2(ara*p.kdv);
+  const fatura = round2(ara+kdv);
+  const odenecek = Math.round(fatura/10)*10;
+  return {enerjiTL, dagTL, etv, kdv, fatura, odenecek, brut: kwh>0? odenecek/kwh : NaN, brutNet: kwh>0? fatura/kwh:NaN};
+}
+function sonFatura(){ const ks=Object.keys(faturalar).sort(); return ks.length? faturalar[ks[ks.length-1]] : null; }
+
+/* ======================= Dönemler ======================= */
+function gelecekDonemler(adet){
+  const fs = Object.values(faturalar).filter(f=>f.sonTarih).sort((x,y)=>x.sonTarih<y.sonTarih?-1:1);
+  let endDay = 17;
+  if (fs.length){ endDay = Math.round(median(fs.slice(-6).map(f=>+f.sonTarih.slice(8,10)))); }
+  let start = fs.length ? d2n(fs[fs.length-1].sonTarih)+1 : todayN();
+  const out=[];
+  for(let i=0;i<adet;i++){
+    let ym = ymOf(start), cand;
+    for(let k=0;k<3;k++){ const y=ymAdd(ym,k); const dd=Math.min(endDay, dim(y)); cand=d2n(`${y}-${String(dd).padStart(2,'0')}`); if(cand-start>=20) break; }
+    out.push({a:start,b:cand,donem:ymOf(cand)});
+    start = cand+1;
+  }
+  return out;
+}
+function donemTahmin(a,b){
+  let k=0, kPlan=0, bilinen=0, gecen=0, gecenTam=true;
+  for(let d=a; d<=b; d++){
+    const act = actualDay(d), pl = planDay(d);
+    kPlan += pl;
+    if (act!==null){ k+=act; bilinen++; } else k+=pl;
+    const g = actualDay(d-365); if(g===null) gecenTam=false; else gecen+=g;
+  }
+  const ebf = enerjiFiyatTahmin(a,b), dbf = P().dag;
+  const h = faturaHesap(k, ebf, dbf);
+  return {kwh:k, kwhPlan:kPlan, bilinen, gun:b-a+1, ebf, dbf, ...h, gecen: gecenTam? gecen : null};
+}
+
+/* ======================= Takvim yılı ======================= */
+function yilOzet(yil){
+  const a=d2n(`${yil}-01-01`), b=d2n(`${yil}-12-31`);
+  const sb = sonBilinenGun();
+  let gercek=0, plan=0, aylar=[];
+  for(let m=0;m<12;m++){ aylar.push({ym:`${yil}-${String(m+1).padStart(2,'0')}`, g:0, p:0, gGun:0, pGun:0}); }
+  for(let d=a; d<=b; d++){
+    const mi = +n2d(d).slice(5,7)-1; const act=actualDay(d);
+    if (act!==null){ gercek+=act; aylar[mi].g+=act; aylar[mi].gGun++; }
+    else { const pl=planDay(d); plan+=pl; aylar[mi].p+=pl; aylar[mi].pGun++; }
+  }
+  const kalanGun = Math.max(0, b - Math.max(sb, a-1));
+  return {gercek, plan, toplam:gercek+plan, aylar, sonBilinen:sb, kalanGun};
+}
+
+/* ======================= Tahmin anlık görüntüleri ======================= */
+let _snapTimer=null;
+function tahminKaydet(){
+  if (!auth.currentUser || !Object.values(loaded).every(Boolean)) return;
+  clearTimeout(_snapTimer);
+  _snapTimer = setTimeout(()=>{
+    const ds = gelecekDonemler(2);
+    const now = new Date().toISOString().slice(0,10);
+    for(const p of ds){
+      if (faturalar[p.donem]) continue;
+      const t = donemTahmin(p.a,p.b);
+      const rec = {tarih:now, kwh:round2(t.kwh), tutar:t.odenecek, ebf:+t.ebf.toFixed(6), a:n2d(p.a), b:n2d(p.b)};
+      const cur = tahminler[p.donem]||{};
+      const upd = {};
+      if (!cur.ilk) upd.ilk = rec;
+      if (!cur.son || Math.abs((cur.son.kwh||0)-rec.kwh)>0.5 || cur.son.tutar!==rec.tutar) upd.son = rec;
+      if (Object.keys(upd).length) db.ref(`${ROOT}/tahminler/${p.donem}`).update(upd);
+    }
+  }, 1500);
+}
+
+/* ======================= Render: Özet ======================= */
+function renderOzet(){
+  hesaplaTrend(); buildInvIndex();
+  const p=P(); const ty = new Date().getFullYear();
+  const sel = $('yil-sec');
+  if (!sel.options.length){ for(const y of [ty-1,ty,ty+1]){ const o=document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);} sel.value=ty; }
+  const yil = +sel.value;
+  const o = yilOzet(yil);
+  $('yil-badge').textContent = `${yil} takvim yılı`;
+  const kalan = p.limit - o.gercek;
+  const gunluk = o.kalanGun>0 ? kalan/o.kalanGun : NaN;
+  const planGunOrt = o.kalanGun>0 ? o.plan/o.kalanGun : NaN;
+  const asim = o.toplam - p.limit;
+  $('limit-tiles').innerHTML = `
+    <div class="tile hi"><div class="lbl">Gerçekleşen</div><div class="val">${fmt0(o.gercek)} kWh</div><div class="sub">${o.sonBilinen>=d2n(yil+'-01-01')? 'son veri: '+trDate(n2d(Math.min(o.sonBilinen,d2n(yil+'-12-31')))) : 'henüz veri yok'}</div></div>
+    <div class="tile ${asim>0?'bad':'good'}"><div class="lbl">Yıl sonu tahmini</div><div class="val">${fmt0(o.toplam)} kWh</div><div class="sub">${asim>0? fmt0(asim)+' kWh limit üstü' : fmt0(-asim)+' kWh limit altı'}</div></div>
+    <div class="tile ${kalan<0?'bad':''}"><div class="lbl">Limite kalan</div><div class="val">${fmt0(kalan)} kWh</div><div class="sub">${o.kalanGun} gün kaldı</div></div>
+    <div class="tile ${gunluk<planGunOrt?'warn':'good'}"><div class="lbl">Limit için günlük en fazla</div><div class="val">${o.kalanGun>0? fmt(Math.max(0,gunluk),1)+' kWh' : '—'}</div><div class="sub">planınız: ${o.kalanGun>0? fmt(planGunOrt,1)+' kWh/gün':'—'}</div></div>`;
+  const W = Math.max(p.limit, o.toplam)*1.05;
+  $('limit-bar').innerHTML = `<div class="a" style="width:${o.gercek/W*100}%"></div><div class="p" style="left:${o.gercek/W*100}%;width:${o.plan/W*100}%"></div><div class="lim" style="left:${p.limit/W*100}%"></div>`;
+  $('limit-note').innerHTML = o.kalanGun>0
+    ? (gunluk<planGunOrt
+        ? `⚠️ Mevcut cihaz planıyla yılı <b>${fmt0(o.toplam)} kWh</b> ile kapatıyorsunuz. ${fmt0(p.limit)} kWh altında kalmak için kalan ${o.kalanGun} günde ortalama <b>${fmt(Math.max(0,gunluk),1)} kWh/gün</b> kullanmalısınız (plan: ${fmt(planGunOrt,1)}). Cihazlar sekmesinde en çok tüketenleri görebilirsiniz.`
+        : `✅ Mevcut planla ${fmt0(p.limit)} kWh limitinin altında kalıyorsunuz.`)
+    : (o.toplam>p.limit? `Bu yıl ${fmt0(p.limit)} kWh limiti aşıldı; sonraki yıl son kaynak tarifesi devam eder.`:`Bu yıl limit altında kalındı.`);
+
+  // Fiyat durumu
+  const sf = sonFatura();
+  const ds = gelecekDonemler(12);
+  const ilk = ds[0] ? donemTahmin(ds[0].a, ds[0].b) : null;
+  const fsorted = Object.values(faturalar).filter(f=>f.enerjiBF).sort((x,y)=>x.donem<y.donem?-1:1);
+  const onceki = fsorted.length>1 ? fsorted[fsorted.length-2] : null;
+  const ok = (a,b)=>{ if(!a||!b) return ''; const ch=(a/b-1)*100; return `<span class="${ch>0.5?'up':(ch<-0.5?'down':'')}">${ch>0?'▲':'▼'} %${fmt(Math.abs(ch),1)}</span>`; };
+  const kis = ds.filter(d=>['12','01','02'].includes(n2d(d.b).slice(5,7))).slice(0,1)[0];
+  const kisT = kis ? donemTahmin(kis.a,kis.b) : null;
+  $('fiyat-badge').textContent = prices ? `PTF verisi: ${prices.guncelleme||'?'}` : 'fiyat dosyası yüklenemedi';
+  $('fiyat-tiles').innerHTML = `
+    <div class="tile"><div class="lbl">Son fatura enerji fiyatı</div><div class="val">${sf&&sf.enerjiBF? fmt(sf.enerjiBF,3):'—'} TL/kWh</div><div class="sub">${sf? donemLabel(sf.donem):''} ${sf&&onceki? ok(sf.enerjiBF,onceki.enerjiBF)+' önceki faturaya göre':''}</div></div>
+    <div class="tile ${ilk&&sf&&ilk.ebf>sf.enerjiBF*1.005?'warn':''}"><div class="lbl">Sıradaki fatura (tahmin)</div><div class="val">${ilk? fmt(ilk.ebf,3):'—'} TL/kWh</div><div class="sub">${ds[0]? donemLabel(ds[0].donem):''} ${ilk&&sf? ok(ilk.ebf,sf.enerjiBF)+' son faturaya göre':''}</div></div>
+    <div class="tile"><div class="lbl">Brüt kWh maliyeti (son fatura)</div><div class="val">${sf&&sf.odenecek? fmt(sf.odenecek/sf.kwh,2):'—'} TL</div><div class="sub">tüm bedel ve vergiler dahil</div></div>
+    <div class="tile hi"><div class="lbl">Brüt kWh (sıradaki, tahmin)</div><div class="val">${ilk? fmt(ilk.brutNet,2):'—'} TL</div><div class="sub">${kisT? 'kış ('+donemLabel(kis.donem)+'): '+fmt(kisT.brutNet,2)+' TL/kWh':''}</div></div>
+    <div class="tile"><div class="lbl">Dağıtım bedeli</div><div class="val">${fmt(p.dag,4)} TL/kWh</div><div class="sub">fiyattan bağımsız sabit kalem</div></div>`;
+  $('fiyat-note').innerHTML = `Kalibrasyon: ×${fmt(kalibrasyon(),3)} (son faturalardaki gerçek fiyat ÷ formül). PTF son 3 ay yıllık değişim: ${_trend>=1?'+':''}${fmt((_trend-1)*100,1)}%. Her 1 kWh tasarruf, sıradaki dönemde yaklaşık <b>${ilk? fmt(ilk.brutNet,2):'—'} TL</b> eder.`;
+
+  renderChart(o, yil);
+  // gelecek dönemler tablosu
+  let rows='';
+  for(const d of ds){
+    const t = donemTahmin(d.a,d.b);
+    rows += `<tr><td><b>${donemLabel(d.donem)}</b></td><td>${trDate(n2d(d.a))} – ${trDate(n2d(d.b))}</td>
+      <td>${fmt(t.kwh,0)}${t.bilinen? ` <span class="hint" title="bilinen gün">(${t.bilinen}/${t.gun} gün gerçek)</span>`:''}</td>
+      <td>${t.gecen!==null? fmt0(t.gecen):'—'}</td>
+      <td>${fmt(t.ebf,3)}</td><td>${fmt(t.fatura)}</td><td><b>${fmt0(t.odenecek)}</b></td><td>${fmt(t.brutNet,2)}</td></tr>`;
+  }
+  $('donem-tablo').innerHTML = `<table><thead><tr><th>Fatura</th><th>Dönem</th><th>Tahmini kWh</th><th>Geçen yıl kWh</th><th>Enerji TL/kWh</th><th>Fatura TL</th><th>Ödenecek ≈</th><th>Brüt TL/kWh</th></tr></thead><tbody>${rows}</tbody></table>`;
+  tahminKaydet();
+}
+
+function renderChart(o, yil){
+  const svg=$('chart'); const W = svg.clientWidth||700, H=240, padL=44, padB=26, padT=12, padR=8;
+  const max = Math.max(50, ...o.aylar.map(a=>a.g+a.p))*1.12;
+  const step = Math.pow(10, Math.floor(Math.log10(max/4))); const tick = [1,2,2.5,5,10].map(x=>x*step).find(x=>max/x<=5)||step*10;
+  const cw = (W-padL-padR)/12, bw = Math.max(6, Math.min(34, cw*0.62));
+  const y = v => padT + (H-padT-padB)*(1-v/max);
+  let s='';
+  for(let v=0; v<=max; v+=tick){ s+=`<line x1="${padL}" x2="${W-padR}" y1="${y(v)}" y2="${y(v)}" stroke="#33455e" stroke-width="1" opacity=".6"/><text x="${padL-6}" y="${y(v)+4}" fill="#93a3b8" font-size="10" text-anchor="end">${fmt0(v)}</text>`; }
+  o.aylar.forEach((a,i)=>{
+    const x = padL + cw*i + (cw-bw)/2;
+    const gh = (H-padT-padB)*a.g/max, ph=(H-padT-padB)*a.p/max;
+    const base = y(0);
+    if (a.g>0) s+=`<path d="${barPath(x, base-gh, bw, gh, a.p>0?0:4)}" fill="var(--s-actual)"/>`;
+    if (a.p>0) s+=`<path d="${barPath(x, base-gh-ph-(a.g>0?2:0), bw, ph, 4)}" fill="var(--s-plan)"/>`;
+    s+=`<text x="${x+bw/2}" y="${H-8}" fill="#93a3b8" font-size="10" text-anchor="middle">${AYLAR[i]}</text>`;
+    s+=`<rect x="${padL+cw*i}" y="${padT}" width="${cw}" height="${H-padT-padB}" fill="transparent" data-i="${i}" class="hit"/>`;
+  });
+  s+=`<line x1="${padL}" x2="${W-padR}" y1="${y(0)}" y2="${y(0)}" stroke="#93a3b8" stroke-width="1"/>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`); svg.innerHTML=s;
+  const tip=$('chart-tip');
+  svg.querySelectorAll('.hit').forEach(r=>{
+    r.addEventListener('mousemove',e=>{ const a=o.aylar[+r.dataset.i]; tip.style.display='block';
+      tip.innerHTML=`<b>${AYLAR_UZUN[+r.dataset.i]} ${yil}</b><br>Gerçek: ${fmt0(a.g)} kWh${a.gGun&&a.pGun?` (${a.gGun} gün)`:''}<br>Plan: ${fmt0(a.p)} kWh<br>Toplam: <b>${fmt0(a.g+a.p)} kWh</b>`;
+      const bx=svg.getBoundingClientRect(); let lx=e.clientX-bx.left+12; if(lx>bx.width-170) lx-=190; tip.style.left=lx+'px'; tip.style.top=(e.clientY-bx.top-10)+'px'; });
+    r.addEventListener('mouseleave',()=>tip.style.display='none');
+    r.addEventListener('click',e=>r.dispatchEvent(new MouseEvent('mousemove',e)));
+  });
+  // tablo
+  let cum=0, rows='';
+  o.aylar.forEach((a,i)=>{ cum+=a.g+a.p; rows+=`<tr><td>${AYLAR_UZUN[i]}</td><td>${fmt0(a.g)}</td><td>${fmt0(a.p)}</td><td>${fmt0(a.g+a.p)}</td><td>${fmt0(cum)}</td></tr>`; });
+  $('ay-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>Gerçek</th><th>Plan</th><th>Toplam</th><th>Kümülatif</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function barPath(x,y,w,h,r){ if(h<=0) return ''; r=Math.min(r,h,w/2); return `M${x},${y+h} V${y+r} Q${x},${y} ${x+r},${y} H${x+w-r} Q${x+w},${y} ${x+w},${y+r} V${y+h} Z`; }
+
+/* ======================= Render: Cihazlar ======================= */
+function seciliAy(){ return +$('ay-sec').value; }
+function renderCihazOzet(){
+  const mi = seciliAy(); const ym = `${new Date().getFullYear()}-${String(mi+1).padStart(2,'0')}`;
+  const gun = dim(ym);
+  const list = Object.entries(cihazlar).map(([k,c])=>({k,c,g:cihazGunluk(c,mi)})).sort((a,b)=>b.g-a.g);
+  const top = list.reduce((s,x)=>s+x.g,0);
+  const max = list.length? list[0].g : 1;
+  const ebf = enerjiFiyatTahmin(d2n(ym+'-01'), d2n(ym+'-'+gun));
+  const h = faturaHesap(top*gun, ebf, P().dag);
+  const olc = list.filter(x=>x.c.kaynak==='olculen').reduce((s,x)=>s+x.g,0);
+  $('cihaz-tiles').innerHTML = `
+    <div class="tile hi"><div class="lbl">${AYLAR_UZUN[mi]} – günlük</div><div class="val">${fmt(top,2)} kWh</div><div class="sub">ölçülen ${fmt(olc,1)} · tahmini ${fmt(top-olc,1)}</div></div>
+    <div class="tile"><div class="lbl">Aylık (${gun} gün)</div><div class="val">${fmt0(top*gun)} kWh</div></div>
+    <div class="tile"><div class="lbl">Tahmini fatura</div><div class="val">${fmt0(h.odenecek)} TL</div><div class="sub">enerji ${fmt(ebf,3)} TL/kWh</div></div>
+    <div class="tile"><div class="lbl">Brüt kWh maliyeti</div><div class="val">${fmt(h.brutNet,2)} TL</div></div>`;
+  $('cihaz-bars').innerHTML = list.filter(x=>x.g>0.0005).map(x=>`<div class="row"><div title="${esc(x.c.ad)}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(x.c.ad)}</div>
+    <div class="track"><div class="fill ${x.c.kaynak==='olculen'?'':'est'}" style="width:${x.g/max*100}%"></div></div>
+    <div class="v">${fmt(x.g*gun,0)} kWh · %${fmt(top? x.g/top*100:0,0)}</div></div>`).join('') || '<p class="hint">Bu ay için kullanım girilmemiş.</p>';
+}
+function renderCihazTablo(){
+  const mi = seciliAy();
+  $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th>${AYLAR.map((a,i)=>`<th class="${i===mi?'cur':''}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>`;
+  const keys = Object.keys(cihazlar).sort((a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0));
+  $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
+    return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
+      <td><select data-f="mod"><option value="saat" ${c.mod!=='kwh'?'selected':''}>W × saat</option><option value="kwh" ${c.mod==='kwh'?'selected':''}>kWh/gün</option></select></td>
+      <td><input class="n" type="number" data-f="guc" value="${c.guc??''}" step="1"></td>
+      <td><input class="m" type="number" data-f="adet" value="${c.adet??1}" step="1" min="0"></td>
+      <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
+      <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
+      ${AYLAR.map((a,i)=>`<td class="${i===mi?'cur':''}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
+      <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*30.4,1)}</td>
+      <td><button class="icon-btn" data-act="fill" title="Seçili ayın değerini tüm aylara kopyala">⇉</button><button class="icon-btn" data-act="del" title="Sil">🗑️</button></td></tr>`; }).join('');
+}
+let _devTimers={};
+$('dev-body').addEventListener('input', e=>{
+  const tr = e.target.closest('tr'); if(!tr) return; const k=tr.dataset.k; const c=cihazlar[k]; if(!c) return;
+  const f=e.target.dataset.f, m=e.target.dataset.m;
+  if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : parseFloat(e.target.value)||0; }
+  else if (m!==undefined){ c.aylik = c.aylik||Array(12).fill(0); c.aylik[+m] = parseFloat(e.target.value)||0; }
+  tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*30.4,1);
+  renderCihazOzet();
+  $('save-badge').textContent='kaydediliyor…';
+  clearTimeout(_devTimers[k]); _devTimers[k]=setTimeout(()=>{ db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>{$('save-badge').textContent='kaydedildi ✓';}); },700);
+});
+$('dev-body').addEventListener('change', e=>{ if(e.target.tagName==='SELECT') e.target.dispatchEvent(new Event('input',{bubbles:true})); });
+$('dev-body').addEventListener('click', e=>{
+  const b=e.target.closest('button'); if(!b) return; const k=b.closest('tr').dataset.k; const c=cihazlar[k];
+  if (b.dataset.act==='del'){ if(confirm(`"${c.ad}" silinsin mi?`)) db.ref(`${ROOT}/cihazlar/${k}`).remove(); }
+  if (b.dataset.act==='fill'){ const v=(c.aylik||[])[seciliAy()]||0; if(confirm(`${AYLAR_UZUN[seciliAy()]} değeri (${v}) tüm aylara kopyalansın mı?`)){ c.aylik=Array(12).fill(v); db.ref(`${ROOT}/cihazlar/${k}`).set(c); } }
+});
+$('dev-add').addEventListener('click',()=>{
+  const sira = Math.max(0,...Object.values(cihazlar).map(c=>c.sira||0))+1;
+  db.ref(`${ROOT}/cihazlar`).push({ad:'Yeni cihaz',mod:'saat',guc:100,adet:1,gh:7,kaynak:'tahmin',aylik:Array(12).fill(0),sira});
+});
+
+/* ======================= Render: Faturalar ======================= */
+function renderFaturalar(){
+  const ks = Object.keys(faturalar).sort().reverse();
+  const rows = ks.map(k=>{ const f=faturalar[k];
+    const h = f.enerjiBF ? faturaHesap(f.kwh, f.enerjiBF, f.dagitimBF) : null;
+    const fark = h&&f.faturaTutar? round2(h.fatura - f.faturaTutar) : null;
+    const t = tahminler[k]||{};
+    const sap = (x)=> x&&f.odenecek ? (()=>{const p=(x.tutar/f.odenecek-1)*100; return `<span class="${Math.abs(p)<5?'diff-ok':(Math.abs(p)<15?'diff-mid':'diff-bad')}">${p>0?'+':''}${fmt(p,0)}%</span>`;})() : '';
+    return `<tr><td><b>${donemLabel(k)}</b></td><td>${trDate(f.ilkTarih)} – ${trDate(f.sonTarih)}</td><td>${fmt(f.kwh,1)}</td>
+      <td>${f.enerjiBF? fmt(f.enerjiBF,4):'<span class="hint">düşük tarife</span>'}</td><td>${fmt(f.dagitimBF,4)}</td>
+      <td><b>${fmt(f.odenecek)}</b></td><td>${h? fmt(h.fatura):'—'}${fark!==null? ` <span class="${Math.abs(fark)<1?'diff-ok':'diff-bad'}">(${fark>0?'+':''}${fmt(fark)})</span>`:''}</td>
+      <td><b>${f.odenecek&&f.kwh? fmt(f.odenecek/f.kwh,3):'—'}</b></td>
+      <td>${t.ilk? `${fmt0(t.ilk.kwh)} kWh · ${fmt0(t.ilk.tutar)} TL ${sap(t.ilk)}`:'—'}</td>
+      <td>${t.son? `${fmt0(t.son.kwh)} kWh · ${fmt0(t.son.tutar)} TL ${sap(t.son)}`:'—'}</td>
+      <td><button class="icon-btn" onclick="faturaDuzenle('${k}')" title="Düzenle">✏️</button><button class="icon-btn" onclick="faturaSil('${k}')" title="Sil">🗑️</button></td></tr>`; }).join('');
+  $('fatura-tablo').innerHTML = `<table><thead><tr><th>Fatura</th><th>Okuma tarihleri</th><th>kWh</th><th>Enerji TL/kWh</th><th>Dağıtım TL/kWh</th><th>Ödenecek TL</th><th>Hesap (fark)</th><th>Brüt TL/kWh</th><th>İlk tahmin</th><th>Son tahmin</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="11" class="hint">Henüz fatura yok.</td></tr>'}</tbody></table>`;
+  // son fatura karşılaştırması
+  if (ks.length){ renderKarsilastir(ks[0]); }
+}
+function renderKarsilastir(k){
+  const f=faturalar[k]; const t=tahminler[k]||{}; $('son-fatura-card').style.display='block';
+  $('son-fatura-badge').textContent = donemLabel(k);
+  const h = f.enerjiBF ? faturaHesap(f.kwh,f.enerjiBF,f.dagitimBF) : null;
+  const plan = (()=>{ let s=0; for(let d=d2n(f.ilkTarih); d<=d2n(f.sonTarih); d++) s+=planDay(d); return s; })();
+  const col=(baslik,kwh,tutar,ebf,ek='')=>`<div class="col"><h4>${baslik}</h4><div><span>Tüketim</span><b>${kwh!=null?fmt(kwh,0)+' kWh':'—'}</b></div><div><span>Enerji fiyatı</span><b>${ebf!=null?fmt(ebf,3):'—'}</b></div><div><span>Tutar</span><b>${tutar!=null?fmt(tutar)+' TL':'—'}</b></div><div><span>Brüt TL/kWh</span><b>${kwh&&tutar?fmt(tutar/kwh,3):'—'}</b></div>${ek}</div>`;
+  const fark=(a,b)=> a!=null&&b? `<div><span>Faturaya göre</span><b class="${Math.abs(a/b-1)<.05?'diff-ok':(Math.abs(a/b-1)<.15?'diff-mid':'diff-bad')}">${a>b?'+':''}${fmt((a/b-1)*100,1)}%</b></div>`:'';
+  const ph = faturaHesap(plan, f.enerjiBF||enerjiFiyatTahmin(d2n(f.ilkTarih),d2n(f.sonTarih)), f.dagitimBF);
+  $('son-fatura-cmp').innerHTML =
+    col('Gerçek fatura (ödenecek)', f.kwh, f.odenecek, f.enerjiBF, f.faturaTutar? `<div><span>Yuvarlamasız tutar</span><b>${fmt(f.faturaTutar)} TL</b></div>`:'') +
+    col('Uygulama hesabı (yuvarlamasız)', f.kwh, h? h.fatura:null, f.enerjiBF, h&&f.faturaTutar? `<div><span>Faturayla fark</span><b class="${Math.abs(h.fatura-f.faturaTutar)<1?'diff-ok':'diff-bad'}">${fmt(h.fatura-f.faturaTutar)} TL</b></div>`:'') +
+    col('İlk tahmin'+(t.ilk?` (${trDate(t.ilk.tarih)})`:''), t.ilk?.kwh, t.ilk?.tutar, t.ilk?.ebf, fark(t.ilk?.tutar, f.odenecek)) +
+    col('Son tahmin'+(t.son?` (${trDate(t.son.tarih)})`:''), t.son?.kwh, t.son?.tutar, t.son?.ebf, fark(t.son?.tutar, f.odenecek)) +
+    col('Cihaz planı (bu dönem)', plan, ph.odenecek, null, fark(plan, f.kwh).replace('Faturaya göre','kWh farkı'));
+}
+window.faturaSil = k=>{ if(confirm(`${donemLabel(k)} faturası silinsin mi?`)) db.ref(`${ROOT}/faturalar/${k}`).remove(); };
+window.faturaDuzenle = k=>{ const f=faturalar[k]; $('manual-details').open=true;
+  $('f-donem').value=k; $('f-ilkt').value=f.ilkTarih||''; $('f-sont').value=f.sonTarih||''; $('f-ilke').value=f.ilkEndeks??''; $('f-sone').value=f.sonEndeks??'';
+  $('f-kwh').value=f.kwh??''; $('f-ebf').value=f.enerjiBF??''; $('f-dbf').value=f.dagitimBF??''; $('f-tutar').value=f.odenecek??''; canliFatura(); $('f-donem').scrollIntoView({behavior:'smooth',block:'center'}); };
+
+// elle giriş
+['f-ilke','f-sone'].forEach(id=>$(id).addEventListener('input',()=>{ const a=parseFloat($('f-ilke').value), b=parseFloat($('f-sone').value); if(!isNaN(a)&&!isNaN(b)&&b>a) $('f-kwh').value=round2(b-a); canliFatura(); }));
+['f-donem','f-ilkt','f-sont','f-kwh','f-ebf','f-dbf','f-tutar'].forEach(id=>$(id).addEventListener('input',canliFatura));
+function formOnDoldur(){
+  const sf=sonFatura(); if(!sf) return;
+  if(!$('f-ilke').value) $('f-ilke').value = sf.sonEndeks??'';
+  if(!$('f-ilkt').value && sf.sonTarih) $('f-ilkt').value = n2d(d2n(sf.sonTarih)+1);
+  if(!$('f-dbf').value) $('f-dbf').value = P().dag;
+}
+function canliFatura(){
+  const kwh=parseFloat($('f-kwh').value), dbf=parseFloat($('f-dbf').value), tutar=parseFloat($('f-tutar').value);
+  let ebf=parseFloat($('f-ebf').value);
+  const a=$('f-ilkt').value, b=$('f-sont').value;
+  if (isNaN(ebf) && a && b) ebf = enerjiFiyatTahmin(d2n(a),d2n(b));
+  if (isNaN(kwh)||isNaN(dbf)||isNaN(ebf)){ $('f-live').innerHTML=''; return; }
+  const h=faturaHesap(kwh,ebf,dbf);
+  const dk=$('f-donem').value; const t=tahminler[dk]||{};
+  $('f-live').innerHTML = `<div class="tiles" style="margin-top:12px">
+    <div class="tile"><div class="lbl">Hesaplanan fatura</div><div class="val">${fmt(h.fatura)} TL</div><div class="sub">ödenecek ≈ ${fmt0(h.odenecek)} TL ${isNaN(parseFloat($('f-ebf').value))?'(tahmini enerji fiyatıyla)':''}</div></div>
+    ${!isNaN(tutar)? `<div class="tile ${Math.abs(h.odenecek-tutar)<=10?'good':'warn'}"><div class="lbl">Faturayla fark</div><div class="val">${fmt(h.odenecek-tutar)} TL</div></div>
+    <div class="tile hi"><div class="lbl">Brüt kWh bedeli</div><div class="val">${fmt(tutar/kwh,3)} TL</div><div class="sub">ödenecek ÷ kWh</div></div>`:''}
+    ${t.son? `<div class="tile"><div class="lbl">Önceki tahmin</div><div class="val">${fmt0(t.son.tutar)} TL</div><div class="sub">${fmt0(t.son.kwh)} kWh · gerçek ${fmt0(kwh)} kWh</div></div>`:''}
+    </div>`;
+}
+$('f-save').addEventListener('click',()=>{
+  const donem=$('f-donem').value, kwh=parseFloat($('f-kwh').value), tutar=parseFloat($('f-tutar').value);
+  if(!donem){ toast('Fatura dönemini seçin.',true); return; }
+  if(isNaN(kwh)||kwh<=0){ toast('kWh girin.',true); return; }
+  if(isNaN(tutar)){ toast('Ödenecek tutarı girin.',true); return; }
+  const rec={donem, ilkTarih:$('f-ilkt').value||null, sonTarih:$('f-sont').value||null, ilkEndeks:parseFloat($('f-ilke').value)||null, sonEndeks:parseFloat($('f-sone').value)||null,
+    kwh, enerjiBF:parseFloat($('f-ebf').value)||null, dagitimBF:parseFloat($('f-dbf').value)||P().dag, odenecek:tutar, kaynak:'elle'};
+  if (rec.enerjiBF){ rec.faturaTutar = faturaHesap(kwh,rec.enerjiBF,rec.dagitimBF).fatura; }
+  db.ref(`${ROOT}/faturalar/${donem}`).set(rec).then(()=>{ toast(`${donemLabel(donem)} faturası kaydedildi.`); $('f-clear').click(); });
+});
+$('f-clear').addEventListener('click',()=>{ ['f-donem','f-ilkt','f-sont','f-ilke','f-sone','f-kwh','f-ebf','f-dbf','f-tutar'].forEach(i=>$(i).value=''); $('f-live').innerHTML=''; formOnDoldur(); });
+
+// XML içe aktarma
+$('xml-input').addEventListener('change', async e=>{
+  const files=[...e.target.files]; let ok=0, err=[];
+  for(const file of files){
+    try{ const rec = xmlFatura(await file.text()); await db.ref(`${ROOT}/faturalar/${rec.donem}`).set(rec); ok++; }
+    catch(ex){ err.push(file.name+': '+ex.message); }
+  }
+  e.target.value='';
+  toast(ok? `${ok} fatura içe aktarıldı.${err.length?' Hata: '+err.join('; '):''}` : 'İçe aktarılamadı: '+err.join('; '), !ok);
+  if (ok) showPage('fatura');
+});
+function xmlFatura(t){
+  const g = k => { const m=t.match(new RegExp('#'+k+': ?([^|<]*)')); return m? m[1].trim() : ''; };
+  if (!/InvoiceLine/.test(t) || !g('DONEM')) throw new Error('Aydem e-Arşiv fatura XML\'i değil');
+  const tr = s => { const [d,m,y]=s.split('.'); return `${y}-${m}-${d}`; };
+  const sum = ks => ks.reduce((s,k)=>{ const v=parseTR(g(k)); return s+(isNaN(v)?0:v); },0);
+  const kwh = parseTR(g('TUKTT'));
+  const dag = parseTR(g('DAGT')), btv=parseTR(g('BTV')), fat=parseTR(g('FATTUT'));
+  const kdvO = P().kdv;
+  const enerjiTL = fat/(1+kdvO) - dag - (isNaN(btv)?0:btv);
+  let ebf = parseTR(g('BFT1')); if (isNaN(ebf)) ebf = parseTR(g('BFT1K1'));
+  const ebfK2 = parseTR(g('BFT1K2'));
+  const kademeli = !isNaN(ebfK2) && Math.abs(ebfK2-ebf)>1e-6;
+  return {
+    donem: g('DONEM').replace('/','-'), ilkTarih: tr(g('IOTAR')), sonTarih: tr(g('SOTAR')),
+    ilkEndeks: round2(sum(['IET1','IET2','IET3'])*1000)/1000, sonEndeks: round2(sum(['SET1','SET2','SET3'])*1000)/1000,
+    kwh, enerjiBF: kademeli? null : +(enerjiTL/kwh).toFixed(6), dagitimBF: parseTR(g('DAGBF')),
+    dagitimTL: dag, etv: btv, kdv: parseTR(g('KDV2')), faturaTutar: fat, odenecek: parseTR(g('ODETUT')), kaynak:'xml'
+  };
+}
+
+/* ======================= Render: Fiyatlar & Ayarlar ======================= */
+function renderAyarlar(){
+  const set=(id,v,mul=1)=>{ $(id).value = (typeof v==='number')? +(v*mul).toFixed(6) : ''; };
+  set('s-dag',ayarlar.dag); set('s-taban',ayarlar.taban); set('s-k',ayarlar.K); set('s-kal',ayarlar.kal);
+  $('s-limit').value = ayarlar.limit ?? 4000; $('s-etv').value = +(P().etv*100).toFixed(2); $('s-kdv').value = +(P().kdv*100).toFixed(2);
+  $('kal-info').textContent = `Otomatik kalibrasyon: ×${fmt(kalibrasyonOto(),3)} · kullanılan dağıtım: ${fmt(P().dag,4)} · taban: ${fmt(P().taban,4)}`;
+  // PTF/YEKDEM tablosu: geçen yıl başı → gelecek yıl sonu
+  const y=new Date().getFullYear(); let rows='';
+  for(let m=0;m<36;m++){
+    const ym = ymAdd(`${y-1}-01`, m); const pt=ptfAy(ym), yk=yekdemAy(ym);
+    const sf = (pt.v+yk.v)*P().K/1000;
+    rows+=`<tr class="${ym<ymOf(todayN())?'past':''}"><td>${donemLabel(ym)}</td><td>${pt.est?`<i>${fmt(pt.v)}</i>`:fmt(pt.v)}</td>
+      <td><input type="number" step="0.01" data-yek="${ym}" value="${(ayarlar.yekdem&&ayarlar.yekdem[ym])??''}" placeholder="${fmt(yk.v)}${yk.est?' (tahmin)':''}" style="width:130px;padding:4px 6px;font-size:.8rem"></td>
+      <td>${fmt(sf,3)}</td><td>${fmt(Math.max(P().taban, sf*kalibrasyon()),3)}</td></tr>`;
+  }
+  $('ptf-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>PTF (TL/MWh)</th><th>YEKDEM (TL/MWh)</th><th>Formül TL/kWh</th><th>Beklenen enerji TL/kWh</th></tr></thead><tbody>${rows}</tbody></table>`;
+  $('ptf-badge').textContent = prices? `son güncelleme ${prices.guncelleme}` : '';
+  // sayaç
+  const ks=Object.keys(sayac).sort().reverse();
+  $('sayac-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>kWh</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td>${donemLabel(k)}</td><td>${fmt(sayac[k])}</td><td><button class="icon-btn" onclick="sayacSil('${k}')">🗑️</button></td></tr>`).join('')}</tbody></table>`;
+}
+window.sayacSil = k=>{ if(confirm(donemLabel(k)+' silinsin mi?')) db.ref(`${ROOT}/sayac/${k}`).remove(); };
+$('sy-save').addEventListener('click',()=>{ const ay=$('sy-ay').value, v=parseFloat($('sy-kwh').value); if(!ay||isNaN(v)){toast('Ay ve kWh girin.',true);return;} db.ref(`${ROOT}/sayac/${ay}`).set(v).then(()=>{toast('Kaydedildi.'); $('sy-kwh').value='';}); });
+$('s-save').addEventListener('click',()=>{
+  const g=id=>{ const v=parseFloat($(id).value); return isNaN(v)? null : v; };
+  const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limit:g('s-limit')??4000,
+    etv: g('s-etv')!==null? g('s-etv')/100 : null, kdv: g('s-kdv')!==null? g('s-kdv')/100 : null };
+  db.ref(`${ROOT}/ayarlar`).update(upd).then(()=>toast('Ayarlar kaydedildi.'));
+});
+$('yek-save').addEventListener('click',()=>{
+  const y={}; document.querySelectorAll('[data-yek]').forEach(i=>{ const v=parseFloat(i.value); if(!isNaN(v)) y[i.dataset.yek]=v; });
+  db.ref(`${ROOT}/ayarlar/yekdem`).set(y).then(()=>toast('YEKDEM değerleri kaydedildi.'));
+});
+
+/* ======================= Sekmeler ======================= */
+function showPage(p){ document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p)); document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p)); if(p==='ozet') renderOzet(); }
+document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.p)));
+(function(){ const s=$('ay-sec'); AYLAR_UZUN.forEach((a,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=a; s.appendChild(o);}); s.value=new Date().getMonth(); s.addEventListener('change',()=>{renderCihazTablo(); renderCihazOzet();}); })();
+$('yil-sec').addEventListener('change', renderOzet);
+window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
+
+let _renderT=null;
+function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); if(!document.activeElement || !$('dev-body').contains(document.activeElement)) renderCihazTablo(); renderFaturalar(); renderAyarlar(); formOnDoldur(); },60); }
+
+/* ======================= Veri bağlantısı ======================= */
+fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
+
+function initData(){
+  const r = db.ref(ROOT);
+  r.child('cihazlar').on('value', s=>{ cihazlar=s.val()||{}; loaded.cihaz=true;
+    if(!s.exists()) { const u={}; SEED_CIHAZLAR.forEach((c,i)=>{ u[r.child('cihazlar').push().key]={...c,sira:i}; }); r.child('cihazlar').set(u); }
+    renderAll(); });
+  r.child('faturalar').on('value', s=>{ faturalar=s.val()||{}; loaded.fatura=true;
+    if(!s.exists()){ const u={}; for(const a of SEED_FATURALAR){ u[a[0]]={donem:a[0],ilkTarih:a[1],sonTarih:a[2],ilkEndeks:a[3],sonEndeks:a[4],kwh:a[5],
+        enerjiBF:a[6]!==null? +((a[11]/1.1-a[8]-a[9])/a[5]).toFixed(6) : null, dagitimBF:a[7], dagitimTL:a[8], etv:a[9], kdv:a[10], faturaTutar:a[11], odenecek:a[12], kaynak:'xml'}; }
+      r.child('faturalar').set(u); }
+    renderAll(); });
+  r.child('sayac').on('value', s=>{ sayac=s.val()||{}; loaded.sayac=true; if(!s.exists()) r.child('sayac').set(SEED_SAYAC); renderAll(); });
+  r.child('ayarlar').on('value', s=>{ ayarlar=s.val()||{}; loaded.ayar=true; renderAll(); });
+  r.child('tahminler').on('value', s=>{ tahminler=s.val()||{}; loaded.tahmin=true; renderAll(); });
+}
+
+/* ======================= Auth (Su Faturası ile aynı) ======================= */
+function setAuthStatus(msg,isErr){ const el=$('auth-status-line'); el.textContent=msg||''; el.style.color=isErr?'var(--danger)':'var(--muted)'; }
+function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+$('google-signin-btn').addEventListener('click',()=>{
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(()=>{
+    if (isStandalone()){ setAuthStatus('Google giriş sayfasına yönlendiriliyor…'); return auth.signInWithRedirect(provider); }
+    setAuthStatus('Google giriş penceresi açılıyor…');
+    return auth.signInWithPopup(provider).then(()=>setAuthStatus(''));
+  }).catch(err=>{
+    if (err&&err.code==='auth/popup-blocked') setAuthStatus('Açılır pencere engellendi, bu site için popup izni verin.',true);
+    else if (err&&err.code==='auth/cancelled-popup-request'){} else setAuthStatus('Giriş başarısız: '+(err&&err.message||'bilinmeyen hata'),true);
+  });
+});
+$('signout-btn').addEventListener('click',()=>auth.signOut());
+auth.getRedirectResult().catch(err=>setAuthStatus('Giriş hatası: '+(err&&err.message||''),true));
+let _inited=false;
+auth.onAuthStateChanged(user=>{
+  if (user){ $('auth-overlay').style.display='none'; $('userbar').style.display='flex'; $('user-email').textContent=user.email||'Giriş yapıldı'; if(!_inited){_inited=true; initData();} }
+  else { $('auth-overlay').style.display='flex'; $('userbar').style.display='none'; }
+});
+window.addEventListener('pageshow',e=>{ if(e.persisted) location.reload(); });
+if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
