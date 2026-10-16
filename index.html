@@ -894,18 +894,33 @@ function initData(){
 /* ======================= Auth (Su Faturası ile aynı) ======================= */
 function setAuthStatus(msg,isErr){ const el=$('auth-status-line'); el.textContent=msg||''; el.style.color=isErr?'var(--danger)':'var(--muted)'; }
 function isStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.matchMedia('(display-mode: fullscreen)').matches || window.navigator.standalone===true; }
+// Giriş: önce her ortamda popup. Ana ekrana eklenmiş (tam ekran) uygulamada yönlendirme (redirect)
+// yöntemi, giriş sayfası farklı alan adında (firebaseapp.com) olduğu için Chrome'un depolama
+// bölümlemesine takılıp sonucu kaybediyor; popup bu sorundan etkilenmiyor. Popup hiç açılamazsa
+// yönlendirmeye düşülür.
+const REDIR_FLAG='elektrikTakip.redirect';
+function hataMesaji(err){ const c=err&&err.code||''; return (err&&err.message||'bilinmeyen hata')+(c?' ('+c+')':''); }
 $('google-signin-btn').addEventListener('click',()=>{
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).then(()=>{
-    if (isStandalone()){ setAuthStatus('Google giriş sayfasına yönlendiriliyor…'); return auth.signInWithRedirect(provider); }
-    setAuthStatus('Google giriş penceresi açılıyor…');
-    return auth.signInWithPopup(provider).then(()=>setAuthStatus(''));
-  }).catch(err=>{
-    if (err&&err.code==='auth/popup-blocked') setAuthStatus('Açılır pencere engellendi, bu site için popup izni verin.',true);
-    else if (err&&err.code==='auth/cancelled-popup-request'){} else setAuthStatus('Giriş başarısız: '+(err&&err.message||'bilinmeyen hata'),true);
-  });
+  setAuthStatus('Google giriş penceresi açılıyor…');
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(()=>auth.signInWithPopup(provider))
+    .then(()=>setAuthStatus(''))
+    .catch(err=>{
+      const c=err&&err.code;
+      if (c==='auth/cancelled-popup-request' || c==='auth/popup-closed-by-user'){ setAuthStatus('Giriş penceresi kapatıldı, tekrar deneyin.'); return; }
+      if (c==='auth/popup-blocked' || c==='auth/operation-not-supported-in-this-environment' || c==='auth/web-storage-unsupported'){
+        setAuthStatus('Google giriş sayfasına yönlendiriliyor…');
+        try{ sessionStorage.setItem(REDIR_FLAG,'1'); }catch(e){}
+        return auth.signInWithRedirect(provider).catch(e=>setAuthStatus('Giriş başarısız: '+hataMesaji(e),true));
+      }
+      setAuthStatus('Giriş başarısız: '+hataMesaji(err),true);
+    });
 });
 $('signout-btn').addEventListener('click',()=>auth.signOut());
-auth.getRedirectResult().catch(err=>setAuthStatus('Giriş hatası: '+(err&&err.message||''),true));
+auth.getRedirectResult().then(r=>{
+  let flag=null; try{ flag=sessionStorage.getItem(REDIR_FLAG); sessionStorage.removeItem(REDIR_FLAG); }catch(e){}
+  if (flag && !(r&&r.user) && !auth.currentUser) setAuthStatus('Yönlendirmeyle giriş tamamlanamadı. Uygulamayı Chrome\'da açıp oradan giriş yapın; giriş bir kez yapılınca ana ekran uygulaması da açık kalır.',true);
+}).catch(err=>setAuthStatus('Giriş hatası: '+hataMesaji(err),true));
 let _inited=false;
 auth.onAuthStateChanged(user=>{
   if (user){ $('auth-overlay').style.display='none'; $('userbar').style.display='flex'; $('user-email').textContent=user.email||'Giriş yapıldı'; if(!_inited){_inited=true; initData();} }
