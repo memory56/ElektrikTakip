@@ -5,7 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, viewport-fit=cover">
 <title>Elektrik Takip</title>
 
-<link rel="manifest" href="manifest.json">
+<script>
+  // iPhone/iPad: ana ekran simgesi tam ekran "web uygulaması" olarak açılırsa iOS ona ayrı, kapalı bir
+  // depolama verir ve Google girişi tamamlanamaz. Bu yüzden iOS'ta simge normal Safari sekmesi olarak
+  // açılsın diye ayrı manifest kullanılıyor (Su Faturası'ndaki kararla aynı). Android tam ekran kalır.
+  (function(){
+    var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var l = document.createElement('link'); l.rel = 'manifest'; l.href = ios ? 'manifest-ios.json' : 'manifest.json';
+    document.head.appendChild(l);
+  })();
+</script>
 <meta name="theme-color" content="#0f172a">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <!-- apple-mobile-web-app-capable bilinçli olarak yok: iOS standalone modda Google girişi
@@ -902,8 +911,9 @@ const REDIR_FLAG='elektrikTakip.redirect';
 function hataMesaji(err){ const c=err&&err.code||''; return (err&&err.message||'bilinmeyen hata')+(c?' ('+c+')':''); }
 $('google-signin-btn').addEventListener('click',()=>{
   setAuthStatus('Google giriş penceresi açılıyor…');
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-    .then(()=>auth.signInWithPopup(provider))
+  // signInWithPopup tıklamanın içinde hemen çağrılmalı: araya bir Promise girerse Safari (iOS)
+  // pencereyi "kullanıcı başlatmadı" diye engelliyor. Kalıcı oturum (LOCAL) zaten varsayılan.
+  auth.signInWithPopup(provider)
     .then(()=>setAuthStatus(''))
     .catch(err=>{
       const c=err&&err.code;
