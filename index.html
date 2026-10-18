@@ -225,6 +225,11 @@
     </div>
 
     <div class="card">
+      <h2>Akıllı priz ölçümleri <span class="badge" id="priz-badge"></span></h2>
+      <div id="priz-icerik"></div>
+    </div>
+
+    <div class="card">
       <h2>Cihaz planı <span class="badge" id="save-badge">otomatik kaydedilir</span></h2>
       <p class="hint"><b>Ölçüm</b>: “W × saat” seçilirse ay sütunlarına <b>günde kaç saat</b> çalıştığını, “kWh/gün” seçilirse akıllı prizden okunan <b>günlük kWh</b> değerini yazın. <b>Gün/hafta</b>: cihaz haftada kaç gün kullanılıyor (her gün = 7). Klimalar için güç, ısıtırken/soğuturken ortalama çekilen değerdir.</p>
       <div class="table-scroll" style="max-height:none">
@@ -704,7 +709,7 @@ function renderCihazTablo(){
       <td><input class="m" type="number" data-f="adet" value="${c.adet??1}" step="1" min="0"></td>
       <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
       <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
-      <td class="unit-cell" style="color:var(--muted);font-size:.78rem">${c.mod==='kwh'?'kWh / gün':'saat / gün'}</td>
+      <td class="unit-cell" style="color:var(--muted);font-size:.78rem">${c.mod==='kwh'?'kWh / gün':'saat / gün'}${c.priz?' · 🔌':''}</td>
       ${AYLAR.map((a,i)=>`<td class="${i===mi?'cur':''}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
       <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*30.4,1)}</td>
       <td><button class="icon-btn" data-act="fill" title="Seçili ayın değerini tüm aylara kopyala">⇉</button><button class="icon-btn" data-act="del" title="Sil">🗑️</button></td></tr>`; }).join('');
@@ -716,7 +721,7 @@ $('dev-body').addEventListener('input', e=>{
   if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : parseFloat(e.target.value)||0; }
   else if (m!==undefined){ c.aylik = c.aylik||Array(12).fill(0); c.aylik[+m] = parseFloat(e.target.value)||0; }
   tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*30.4,1);
-  tr.querySelector('.unit-cell').textContent = c.mod==='kwh' ? 'kWh / gün' : 'saat / gün';
+  tr.querySelector('.unit-cell').textContent = (c.mod==='kwh' ? 'kWh / gün' : 'saat / gün') + (c.priz?' · 🔌':'');
   renderCihazOzet();
   $('save-badge').textContent='kaydediliyor…';
   clearTimeout(_devTimers[k]); _devTimers[k]=setTimeout(()=>{ db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>{$('save-badge').textContent='kaydedildi ✓';}); },700);
@@ -872,6 +877,51 @@ $('yek-save').addEventListener('click',()=>{
   db.ref(`${ROOT}/ayarlar/yekdem`).set(y).then(()=>toast('YEKDEM değerleri kaydedildi.'));
 });
 
+
+/* ======================= Akıllı priz ölçümleri (Smart Life / Tuya) ======================= */
+let olcum = null;
+fetch('olcumler.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ olcum=j; renderPrizler(); olcumUygula(); }).catch(()=>{ olcum=null; renderPrizler(); });
+function prizSon7(rec){ const ks=Object.keys(rec.gunluk||{}).sort().slice(-7); return ks.map(k=>({g:k,v:rec.gunluk[k]})); }
+function renderPrizler(){
+  const box=$('priz-icerik'); if(!box) return;
+  const list = olcum && olcum.cihazlar ? Object.entries(olcum.cihazlar) : [];
+  if(!list.length){
+    $('priz-badge').textContent='henüz veri yok';
+    box.innerHTML='<p class="hint">Smart Life prizlerinin günlük kWh değerleri her sabah otomatik okunur ve buraya gelir. Bunun için Tuya geliştirici hesabının GitHub\'a bağlanması gerekiyor (kurulum adımları sohbette). Bağlandıktan sonraki ilk sabah prizler burada listelenir; her prizi aşağıdaki cihazlardan biriyle eşleştirmeniz yeterli.</p>';
+    return;
+  }
+  $('priz-badge').textContent = 'son güncelleme: '+(olcum.guncelleme||'?');
+  const gunler=[...new Set(list.flatMap(([id,r])=>prizSon7(r).map(x=>x.g)))].sort().slice(-7);
+  const bagli = id => Object.entries(cihazlar).find(([k,c])=>c.priz===id);
+  const opts = id => { const b=bagli(id); return '<option value="">— eşleştirilmedi —</option>'+Object.entries(cihazlar).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0)).map(([k,c])=>`<option value="${k}" ${b&&b[0]===k?'selected':''}>${esc(c.ad)}</option>`).join(''); };
+  box.innerHTML = `<p class="hint">Bir prizi cihazla eşleştirdiğinizde o cihazın ilgili aylardaki değeri ölçülen günlük kWh ortalamasıyla otomatik güncellenir (ayda en az 3 gün veri varsa).</p>
+  <div class="table-scroll"><table><thead><tr><th>Priz (Smart Life)</th><th>Anlık</th>${gunler.map(g=>`<th>${g.slice(8,10)}.${g.slice(5,7)}</th>`).join('')}<th>7 gün ort.</th><th>Bağlı cihaz</th></tr></thead><tbody>${
+    list.map(([id,r])=>{ const s7=prizSon7(r); const ort=s7.length? s7.reduce((a,x)=>a+x.v,0)/s7.length : NaN;
+      return `<tr><td>${r.online===false?'⚪':'🟢'} ${esc(r.ad||id)}</td><td title="${esc(r.anlikZaman||'')}">${r.anlikW!=null? fmt0(r.anlikW)+' W':'—'}</td>
+      ${gunler.map(g=>`<td>${r.gunluk&&r.gunluk[g]!=null? fmt(r.gunluk[g],2):'—'}</td>`).join('')}
+      <td><b>${fmt(ort,2)}</b> kWh</td><td><select data-priz="${id}" style="min-width:170px">${opts(id)}</select></td></tr>`; }).join('')
+  }</tbody></table></div><p class="hint" style="margin-top:6px">Değerler kWh/gün. “Anlık” son okuma anındaki güçtür.</p>`;
+  box.querySelectorAll('select[data-priz]').forEach(sel=>sel.addEventListener('change',()=>prizEsle(sel.dataset.priz, sel.value)));
+}
+function prizEsle(id, key){
+  const upd={};
+  for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id && k!==key) upd[`${k}/priz`]=null;
+  if(key){ Object.assign(upd,{[`${key}/priz`]:id, [`${key}/mod`]:'kwh', [`${key}/adet`]:1, [`${key}/gh`]:7, [`${key}/kaynak`]:'olculen'}); }
+  db.ref(`${ROOT}/cihazlar`).update(upd).then(()=>{ toast(key? `${cihazlar[key].ad} prizle eşleştirildi.` : 'Eşleştirme kaldırıldı.'); setTimeout(olcumUygula,300); });
+}
+function olcumUygula(){
+  if(!olcum || !olcum.cihazlar || !loaded.cihaz || !auth.currentUser) return;
+  for(const [k,c] of Object.entries(cihazlar)){
+    const r = c.priz && olcum.cihazlar[c.priz]; if(!r || !r.gunluk) continue;
+    const ay={}; for(const [g,v] of Object.entries(r.gunluk)){ const ym=g.slice(0,7); (ay[ym]=ay[ym]||[]).push(v); }
+    const yeni = (c.aylik||Array(12).fill(0)).slice(); let degisti=false;
+    for(const ym of Object.keys(ay).sort()){ const a=ay[ym]; if(a.length<3) continue;
+      const ort=Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100; const mi=+ym.slice(5,7)-1;
+      if(Math.abs((+yeni[mi]||0)-ort)>0.005){ yeni[mi]=ort; degisti=true; } }
+    if(degisti) db.ref(`${ROOT}/cihazlar/${k}/aylik`).set(yeni);
+  }
+}
+
 /* ======================= Sekmeler ======================= */
 function showPage(p){ document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p)); document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p)); if(p==='ozet') renderOzet(); }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.p)));
@@ -880,7 +930,7 @@ $('yil-sec').addEventListener('change', renderOzet);
 window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
 
 let _renderT=null;
-function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); if(!document.activeElement || !$('dev-body').contains(document.activeElement)) renderCihazTablo(); renderFaturalar(); renderAyarlar(); formOnDoldur(); },60); }
+function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); if(!document.activeElement || !$('dev-body').contains(document.activeElement)) renderCihazTablo(); renderFaturalar(); renderAyarlar(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
 
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });

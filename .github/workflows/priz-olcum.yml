@@ -1,0 +1,34 @@
+name: Akıllı priz ölçümlerini al
+
+on:
+  schedule:
+    - cron: "41 2 * * *"   # her gün 05:41 (TSİ)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-yazma
+  cancel-in-progress: false
+
+jobs:
+  olcum:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tuya Cloud'dan günlük kWh oku
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_ACCESS_SECRET: ${{ secrets.TUYA_ACCESS_SECRET }}
+          TUYA_REGION: ${{ secrets.TUYA_REGION }}
+        run: python3 scripts/tuya_olcum.py
+      - name: Değişiklik varsa kaydet
+        run: |
+          [ -f olcumler.json ] || exit 0
+          git add olcumler.json
+          if git diff --cached --quiet; then echo "Değişiklik yok"; exit 0; fi
+          git config user.name "olcum-botu"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -m "Priz ölçümleri ($(date +%F))"
+          git pull --rebase -q && git push
