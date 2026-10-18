@@ -1,0 +1,96 @@
+{
+ "cihazlar": {
+  "608610038caab5d7cb7e": {
+   "gunluk": {
+    "2026-10-15": 0.139,
+    "2026-10-16": 2.296,
+    "2026-10-17": 1.407
+   },
+   "ad": "3 - Termosifon",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "add_ele"
+  },
+  "608610038caab5d88a54": {
+   "gunluk": {
+    "2026-10-15": 0.0,
+    "2026-10-16": 0.0,
+    "2026-10-17": 0.0
+   },
+   "ad": "1 - Çamaşır MAK",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "cur_power"
+  },
+  "bf145e8184512a154cwoq6": {
+   "gunluk": {
+    "2026-10-15": 0.0,
+    "2026-10-16": 0.0,
+    "2026-10-17": 0.0
+   },
+   "ad": "5 - Arıtma",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "cur_power"
+  },
+  "608610038caab5dfba47": {
+   "gunluk": {
+    "2026-10-15": 0.0,
+    "2026-10-16": 0.0,
+    "2026-10-17": 0.0
+   },
+   "ad": "4 - Bulaşık MAK. ",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "cur_power"
+  },
+  "bfbf453ada572d7f77e9ca": {
+   "gunluk": {
+    "2026-10-15": 0.729,
+    "2026-10-16": 0.211,
+    "2026-10-17": 0.195
+   },
+   "ad": "7- Veranda TV",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "add_ele"
+  },
+  "608610038caab5d7c74b": {
+   "gunluk": {
+    "2026-10-15": 0.0,
+    "2026-10-16": 0.0,
+    "2026-10-17": 0.12
+   },
+   "ad": "2 - Elektrikli Ocak",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "add_ele"
+  },
+  "bf9c6a18b5fe5c1404acsb": {
+   "gunluk": {
+    "2026-10-15": 0.0,
+    "2026-10-16": 0.308,
+    "2026-10-17": 0.959
+   },
+   "ad": "6 - Tost Mak. ",
+   "kategori": "cz",
+   "online": true,
+   "anlikW": 0.0,
+   "anlikZaman": "2026-10-18 18:50",
+   "yontem": "add_ele"
+  }
+ },
+ "guncelleme": "2026-10-18 18:50"
+}
