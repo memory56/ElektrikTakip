@@ -85,6 +85,7 @@
   #dev-table input,#dev-table select{padding:6px 6px;font-size:.82rem;border-radius:7px;}
   #dev-table td{padding:4px 4px;}
   #dev-table input.m{width:58px;text-align:right;}
+  #dev-table input[type=text].m{padding:6px 6px;border-radius:7px;border:1px solid var(--border);background:var(--input-bg);color:var(--text);font-size:.82rem;}
   #dev-table input.n{width:70px;text-align:right;}
   #dev-table input.name{width:170px;}
   #dev-table select{min-width:100px;}
@@ -717,7 +718,7 @@ function ayToplam(i){ let t=0; for(const k in cihazlar) t+=cihazGunluk(cihazlar[
 function hucreSinif(i,mi){ const now=new Date().getMonth(); return i===now? 'now' : (i===mi? 'cur':''); }
 function renderToplamSatiri(){
   const mi=seciliAy(); const row=document.querySelector('#dev-head tr.tot'); if(!row) return;
-  AYLAR.forEach((a,i)=>{ const c=row.querySelector(`[data-tm="${i}"]`); if(c) c.textContent=fmt0(ayToplam(i)); });
+  AYLAR.forEach((a,i)=>{ const c=row.querySelector(`[data-tm="${i}"]`); if(c){ const t=ayToplam(i); c.innerHTML=`${fmt0(t)}<div style="font-weight:500;font-size:.68rem;opacity:.8">${fmt(t/ayGun(i),1)}/gün</div>`; } });
   const ys=row.querySelector('[data-tm="yil"]'); if(ys) ys.textContent=fmt0(AYLAR.reduce((t,a,i)=>t+ayToplam(i),0))+' /yıl';
   const sec=row.querySelector('[data-tm="sec"]'); if(sec) sec.textContent=fmt0(ayToplam(mi));
   floatKur();
@@ -753,7 +754,7 @@ window.addEventListener('resize', ()=>requestAnimationFrame(floatKur));
 function renderCihazTablo(){
   const mi = seciliAy();
   $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th><th>Ay değerleri</th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>
-    <tr class="tot"><th class="sticky lbl">Aylık toplam (kWh)</th><th colspan="6" class="lbl" data-tm="yil"></th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}" data-tm="${i}"></th>`).join('')}<th data-tm="sec"></th><th></th></tr>`;
+    <tr class="tot"><th class="sticky lbl">Aylık toplam (kWh)<div style="font-weight:500;font-size:.68rem">altında: günlük ortalama</div></th><th colspan="6" class="lbl" data-tm="yil"></th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}" data-tm="${i}"></th>`).join('')}<th data-tm="sec"></th><th></th></tr>`;
   const keys = Object.keys(cihazlar).sort((a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0));
   $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
     return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
@@ -763,34 +764,38 @@ function renderCihazTablo(){
       <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
       <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
       <td class="unit-cell" style="color:var(--muted);font-size:.78rem">${c.mod==='kwh'?'kWh / gün':'saat / gün'}${c.priz?' · 🔌':''}</td>
-      ${AYLAR.map((a,i)=>`<td class="${hucreSinif(i,mi)}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
+      ${AYLAR.map((a,i)=>`<td class="${hucreSinif(i,mi)}"><input class="m" type="text" inputmode="decimal" autocomplete="off" data-m="${i}" value="${String((c.aylik&&c.aylik[i])??0).replace('.',',')}"></td>`).join('')}
       <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*ayGun(mi),1)}</td>
       <td><button class="icon-btn" data-act="fill" title="Seçili ayın değerini tüm aylara kopyala">⇉</button><button class="icon-btn" data-act="del" title="Sil">🗑️</button></td></tr>`; }).join('');
   renderToplamSatiri();
   requestAnimationFrame(floatKur);
 }
 let _devTimers={};
-$('dev-body').addEventListener('input', e=>{
+function sayi(v){ const n=parseFloat(String(v??'').trim().replace(',','.')); return isNaN(n)?0:n; }
+function devDegisti(e){
   const tr = e.target.closest('tr'); if(!tr) return; const k=tr.dataset.k; const c=cihazlar[k]; if(!c) return;
   const f=e.target.dataset.f, m=e.target.dataset.m;
-  if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : parseFloat(e.target.value)||0; }
-  else if (m!==undefined){ c.aylik = c.aylik||Array(12).fill(0); c.aylik[+m] = parseFloat(e.target.value)||0; }
+  if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : sayi(e.target.value); }
+  else if (m!==undefined){ c.aylik = (c.aylik||Array(12).fill(0)).slice(); const yeni=sayi(e.target.value); if(c.aylik[+m]===yeni && e.type!=='input') return; c.aylik[+m] = yeni; }
+  else return;
   tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*ayGun(seciliAy()),1);
   renderToplamSatiri();
   tr.querySelector('.unit-cell').textContent = (c.mod==='kwh' ? 'kWh / gün' : 'saat / gün') + (c.priz?' · 🔌':'');
   renderCihazOzet();
   $('save-badge').textContent='kaydediliyor…';
   clearTimeout(_devTimers[k]); _devTimers[k]=setTimeout(()=>{ db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>{$('save-badge').textContent='kaydedildi ✓';}); },700);
-});
+}
+// Bazı tablet klavyeleri her tuşta 'input' olayı göndermiyor; keyup/change ile de güncelle
+['input','keyup','change'].forEach(ev=>$('dev-body').addEventListener(ev, e=>{ if(e.target.matches('input')) devDegisti(e); }));
 $('dev-scroll').addEventListener('scroll', floatGuncelle, {passive:true});
-$('dev-body').addEventListener('change', e=>{ if(e.target.tagName==='SELECT') e.target.dispatchEvent(new Event('input',{bubbles:true})); });
+$('dev-body').addEventListener('change', e=>{ if(e.target.tagName==='SELECT') devDegisti(e); });
 $('dev-body').addEventListener('click', e=>{
   const b=e.target.closest('button'); if(!b) return; const k=b.closest('tr').dataset.k; const c=cihazlar[k];
   if (b.dataset.act==='del'){ if(confirm(`"${c.ad}" silinsin mi?`)) db.ref(`${ROOT}/cihazlar/${k}`).remove(); }
   if (b.dataset.act==='fill'){ const v=(c.aylik||[])[seciliAy()]||0; if(confirm(`${AYLAR_UZUN[seciliAy()]} değeri (${v}) tüm aylara kopyalansın mı?`)){
       c.aylik=Array(12).fill(v);
       // ekranı hemen güncelle (kaydetmeyi beklemeden)
-      const tr=b.closest('tr'); tr.querySelectorAll('input[data-m]').forEach(i=>i.value=v);
+      const tr=b.closest('tr'); tr.querySelectorAll('input[data-m]').forEach(i=>i.value=String(v).replace('.',','));
       tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*ayGun(seciliAy()),1);
       b.blur(); renderToplamSatiri(); renderCihazOzet();
       db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>toast(`${c.ad}: ${v} tüm aylara kopyalandı.`));
