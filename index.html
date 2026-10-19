@@ -787,7 +787,14 @@ $('dev-body').addEventListener('change', e=>{ if(e.target.tagName==='SELECT') e.
 $('dev-body').addEventListener('click', e=>{
   const b=e.target.closest('button'); if(!b) return; const k=b.closest('tr').dataset.k; const c=cihazlar[k];
   if (b.dataset.act==='del'){ if(confirm(`"${c.ad}" silinsin mi?`)) db.ref(`${ROOT}/cihazlar/${k}`).remove(); }
-  if (b.dataset.act==='fill'){ const v=(c.aylik||[])[seciliAy()]||0; if(confirm(`${AYLAR_UZUN[seciliAy()]} değeri (${v}) tüm aylara kopyalansın mı?`)){ c.aylik=Array(12).fill(v); db.ref(`${ROOT}/cihazlar/${k}`).set(c); } }
+  if (b.dataset.act==='fill'){ const v=(c.aylik||[])[seciliAy()]||0; if(confirm(`${AYLAR_UZUN[seciliAy()]} değeri (${v}) tüm aylara kopyalansın mı?`)){
+      c.aylik=Array(12).fill(v);
+      // ekranı hemen güncelle (kaydetmeyi beklemeden)
+      const tr=b.closest('tr'); tr.querySelectorAll('input[data-m]').forEach(i=>i.value=v);
+      tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*ayGun(seciliAy()),1);
+      b.blur(); renderToplamSatiri(); renderCihazOzet();
+      db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>toast(`${c.ad}: ${v} tüm aylara kopyalandı.`));
+  } }
 });
 $('dev-add').addEventListener('click',()=>{
   const sira = Math.max(0,...Object.values(cihazlar).map(c=>c.sira||0))+1;
@@ -987,7 +994,7 @@ $('yil-sec').addEventListener('change', renderOzet);
 window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
 
 let _renderT=null;
-function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); if(!document.activeElement || !$('dev-body').contains(document.activeElement)) renderCihazTablo(); renderFaturalar(); renderAyarlar(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
+function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); { const ae=document.activeElement; const yaziyor = ae && $('dev-body').contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT'); if(!yaziyor) renderCihazTablo(); } renderFaturalar(); renderAyarlar(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
 
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
