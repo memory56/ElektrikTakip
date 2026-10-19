@@ -90,7 +90,20 @@
   #dev-table select{min-width:100px;}
   #dev-table td.sticky,#dev-table th.sticky{position:sticky;left:0;background:var(--panel);z-index:2;}
   #dev-table th.sticky{background:var(--panel2);z-index:3;}
-  #dev-table th.cur,#dev-table td.cur{background:rgba(58,160,255,.10);}
+  #dev-scroll{max-height:none !important;overflow-x:auto;overflow-y:visible;}
+  #dev-table thead th{position:static;}
+  .devt thead tr.tot th{background:#22304a;color:var(--text);font-weight:700;font-size:.78rem;border-bottom:2px solid var(--border);}
+  #dev-float{position:fixed;display:none;overflow:hidden;z-index:15;box-shadow:0 6px 12px rgba(0,0,0,.35);}
+  #dev-float table{table-layout:fixed;border-collapse:collapse;font-size:.8rem;}
+  #dev-float th{position:static;}
+  #dev-float tr:first-child th.sticky{background:var(--panel2);}
+  .devt thead tr.tot th.lbl{text-align:left;color:var(--muted);font-weight:600;}
+  
+  .devt th.cur,.devt td.cur{background:rgba(58,160,255,.10);}
+  .devt thead th.now{background:#f59f3a;color:#1a1004;}
+  .devt thead tr.tot th.now{background:#c97a20;color:#fff;}
+  #dev-table td.now{background:rgba(245,159,58,.16);}
+  #dev-table td.now input{border-color:#f59f3a;}
   .bars .row{display:grid;grid-template-columns:150px 1fr 120px;gap:10px;align-items:center;margin:5px 0;font-size:.82rem;}
   .bars .track{height:12px;background:var(--panel2);border-radius:6px;overflow:hidden;}
   .bars .fill{height:100%;background:var(--s-actual);border-radius:0 4px 4px 0;}
@@ -232,12 +245,13 @@
     <div class="card">
       <h2>Cihaz planı <span class="badge" id="save-badge">otomatik kaydedilir</span></h2>
       <p class="hint"><b>Ölçüm</b>: “W × saat” seçilirse ay sütunlarına <b>günde kaç saat</b> çalıştığını, “kWh/gün” seçilirse akıllı prizden okunan <b>günlük kWh</b> değerini yazın. <b>Gün/hafta</b>: cihaz haftada kaç gün kullanılıyor (her gün = 7). Klimalar için güç, ısıtırken/soğuturken ortalama çekilen değerdir.</p>
-      <div class="table-scroll" style="max-height:none">
-        <table id="dev-table"><thead id="dev-head"></thead><tbody id="dev-body"></tbody></table>
+      <div id="dev-float"><table class="devt"><thead></thead></table></div>
+      <div class="table-scroll" id="dev-scroll">
+        <table id="dev-table" class="devt"><thead id="dev-head"></thead><tbody id="dev-body"></tbody></table>
       </div>
       <div class="btn-row">
         <button class="btn secondary" id="dev-add">+ Cihaz ekle</button>
-        <span class="hint" style="margin:0">Seçili ay sütunu mavi ile vurgulanır. Bir satırdaki değeri tüm aylara kopyalamak için ⇉ düğmesini kullanın.</span>
+        <span class="hint" style="margin:0">İçinde bulunduğumuz ay turuncu, üstte seçtiğiniz ay (farklıysa) mavi vurgulanır. Bir satırdaki değeri tüm aylara kopyalamak için ⇉ düğmesini kullanın.</span>
       </div>
     </div>
   </section>
@@ -698,9 +712,48 @@ function renderCihazOzet(){
     <div class="track"><div class="fill ${x.c.kaynak==='olculen'?'':'est'}" style="width:${x.g/max*100}%"></div></div>
     <div class="v">${fmt(x.g*gun,0)} kWh · %${fmt(top? x.g/top*100:0,0)}</div></div>`).join('') || '<p class="hint">Bu ay için kullanım girilmemiş.</p>';
 }
+function ayGun(i){ const y=new Date().getFullYear(); return dim(`${y}-${String(i+1).padStart(2,'0')}`); }
+function ayToplam(i){ let t=0; for(const k in cihazlar) t+=cihazGunluk(cihazlar[k],i); return t*ayGun(i); }
+function hucreSinif(i,mi){ const now=new Date().getMonth(); return i===now? 'now' : (i===mi? 'cur':''); }
+function renderToplamSatiri(){
+  const mi=seciliAy(); const row=document.querySelector('#dev-head tr.tot'); if(!row) return;
+  AYLAR.forEach((a,i)=>{ const c=row.querySelector(`[data-tm="${i}"]`); if(c) c.textContent=fmt0(ayToplam(i)); });
+  const ys=row.querySelector('[data-tm="yil"]'); if(ys) ys.textContent=fmt0(AYLAR.reduce((t,a,i)=>t+ayToplam(i),0))+' /yıl';
+  const sec=row.querySelector('[data-tm="sec"]'); if(sec) sec.textContent=fmt0(ayToplam(mi));
+  floatKur();
+}
+/* Sayfa kaydırılınca ay adları + toplam satırı ekranın üstünde sabit kalsın (tablo yatay kaydırılabildiği için
+   CSS sticky çalışmıyor; başlığın bir kopyası sabit konumda gösterilip yatay kaydırmayla eşleniyor). */
+function floatKur(){
+  const fl=$('dev-float'), head=$('dev-head'); if(!fl||!head) return;
+  if(!$('p-cihaz').classList.contains('on')){ fl.style.display='none'; fl._kurulu=false; return; } // gizliyken ölçüm yapılamaz
+  fl._kurulu=true;
+  const th=fl.querySelector('thead'); th.innerHTML=head.innerHTML;
+  const src=[...head.querySelectorAll('th')], dst=[...th.querySelectorAll('th')];
+  src.forEach((c,i)=>{ const w=c.getBoundingClientRect().width; if(dst[i]){ dst[i].style.width=dst[i].style.minWidth=dst[i].style.maxWidth=w+'px'; dst[i].style.boxSizing='border-box'; } });
+  const r1=head.querySelectorAll('tr');
+  [...th.querySelectorAll('tr')].forEach((tr,i)=>{ if(r1[i]) tr.style.height=r1[i].getBoundingClientRect().height+'px'; });
+  fl.querySelector('table').style.width=$('dev-table').getBoundingClientRect().width+'px';
+  floatGuncelle();
+}
+function floatGuncelle(){
+  const fl=$('dev-float'), head=$('dev-head'), wrap=$('dev-scroll'), tb=$('dev-table'); if(!fl||!head||!wrap) return;
+  if(!$('p-cihaz').classList.contains('on')){ fl.style.display='none'; return; }
+  const tbar=document.querySelector('.topbar'); const T=tbar? tbar.getBoundingClientRect().bottom : 0;
+  const hr=head.getBoundingClientRect(), tr=tb.getBoundingClientRect(), wr=wrap.getBoundingClientRect();
+  const goster = hr.top < T && tr.bottom > T + hr.height + 20;
+  fl.style.display = goster? 'block':'none'; if(!goster) return;
+  if(!fl._yeniden && (!fl._kurulu || Math.abs(fl.querySelector('table').getBoundingClientRect().width - tr.width) > 1)){ fl._yeniden=true; try{ floatKur(); } finally { fl._yeniden=false; } return; }
+  fl.style.top=T+'px'; fl.style.left=wr.left+'px'; fl.style.width=wrap.clientWidth+'px';
+  const t=fl.querySelector('table'); t.style.transform=`translateX(${-wrap.scrollLeft}px)`;
+  fl.querySelectorAll('th.sticky').forEach(c=>{ c.style.position='relative'; c.style.left=wrap.scrollLeft+'px'; c.style.zIndex=2; });
+}
+window.addEventListener('scroll', floatGuncelle, {passive:true});
+window.addEventListener('resize', ()=>requestAnimationFrame(floatKur));
 function renderCihazTablo(){
   const mi = seciliAy();
-  $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th><th>Ay değerleri</th>${AYLAR.map((a,i)=>`<th class="${i===mi?'cur':''}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>`;
+  $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th><th>Ay değerleri</th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>
+    <tr class="tot"><th class="sticky lbl">Aylık toplam (kWh)</th><th colspan="6" class="lbl" data-tm="yil"></th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}" data-tm="${i}"></th>`).join('')}<th data-tm="sec"></th><th></th></tr>`;
   const keys = Object.keys(cihazlar).sort((a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0));
   $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
     return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
@@ -710,9 +763,11 @@ function renderCihazTablo(){
       <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
       <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
       <td class="unit-cell" style="color:var(--muted);font-size:.78rem">${c.mod==='kwh'?'kWh / gün':'saat / gün'}${c.priz?' · 🔌':''}</td>
-      ${AYLAR.map((a,i)=>`<td class="${i===mi?'cur':''}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
-      <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*30.4,1)}</td>
+      ${AYLAR.map((a,i)=>`<td class="${hucreSinif(i,mi)}"><input class="m" type="number" step="0.1" min="0" data-m="${i}" value="${(c.aylik&&c.aylik[i])??0}"></td>`).join('')}
+      <td class="kwh-cell">${fmt(cihazGunluk(c,mi)*ayGun(mi),1)}</td>
       <td><button class="icon-btn" data-act="fill" title="Seçili ayın değerini tüm aylara kopyala">⇉</button><button class="icon-btn" data-act="del" title="Sil">🗑️</button></td></tr>`; }).join('');
+  renderToplamSatiri();
+  requestAnimationFrame(floatKur);
 }
 let _devTimers={};
 $('dev-body').addEventListener('input', e=>{
@@ -720,12 +775,14 @@ $('dev-body').addEventListener('input', e=>{
   const f=e.target.dataset.f, m=e.target.dataset.m;
   if (f){ c[f] = (f==='ad'||f==='mod'||f==='kaynak') ? e.target.value : parseFloat(e.target.value)||0; }
   else if (m!==undefined){ c.aylik = c.aylik||Array(12).fill(0); c.aylik[+m] = parseFloat(e.target.value)||0; }
-  tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*30.4,1);
+  tr.querySelector('.kwh-cell').textContent = fmt(cihazGunluk(c,seciliAy())*ayGun(seciliAy()),1);
+  renderToplamSatiri();
   tr.querySelector('.unit-cell').textContent = (c.mod==='kwh' ? 'kWh / gün' : 'saat / gün') + (c.priz?' · 🔌':'');
   renderCihazOzet();
   $('save-badge').textContent='kaydediliyor…';
   clearTimeout(_devTimers[k]); _devTimers[k]=setTimeout(()=>{ db.ref(`${ROOT}/cihazlar/${k}`).set(c).then(()=>{$('save-badge').textContent='kaydedildi ✓';}); },700);
 });
+$('dev-scroll').addEventListener('scroll', floatGuncelle, {passive:true});
 $('dev-body').addEventListener('change', e=>{ if(e.target.tagName==='SELECT') e.target.dispatchEvent(new Event('input',{bubbles:true})); });
 $('dev-body').addEventListener('click', e=>{
   const b=e.target.closest('button'); if(!b) return; const k=b.closest('tr').dataset.k; const c=cihazlar[k];
@@ -923,7 +980,7 @@ function olcumUygula(){
 }
 
 /* ======================= Sekmeler ======================= */
-function showPage(p){ document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p)); document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p)); if(p==='ozet') renderOzet(); }
+function showPage(p){ setTimeout(()=>{ if(p==='cihaz') floatKur(); else floatGuncelle(); },50); document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p)); document.querySelectorAll('.page').forEach(s=>s.classList.toggle('on',s.id==='p-'+p)); if(p==='ozet') renderOzet(); }
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.p)));
 (function(){ const s=$('ay-sec'); AYLAR_UZUN.forEach((a,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=a; s.appendChild(o);}); s.value=new Date().getMonth(); s.addEventListener('change',()=>{renderCihazTablo(); renderCihazOzet();}); })();
 $('yil-sec').addEventListener('change', renderOzet);
@@ -987,6 +1044,8 @@ auth.onAuthStateChanged(user=>{
   else { $('auth-overlay').style.display='flex'; $('userbar').style.display='none'; }
 });
 window.addEventListener('pageshow',e=>{ if(e.persisted) location.reload(); });
+function topbarOlc(){ const t=document.querySelector('.topbar'); if(t) document.documentElement.style.setProperty('--topbar-h', t.getBoundingClientRect().height+'px'); }
+window.addEventListener('resize', topbarOlc); window.addEventListener('load', topbarOlc); setTimeout(topbarOlc, 500);
 /* Ana ekrana ekleme ve tam ekran */
 let _installEvt=null;
 window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); _installEvt=e; $('install-btn').hidden=false; });
