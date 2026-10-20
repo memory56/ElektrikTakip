@@ -320,6 +320,18 @@
     </div>
 
     <div class="card">
+      <h2>Evde olmayacağım günler</h2>
+      <p class="hint">Bu günlerde cihaz planı yerine aşağıdaki günlük tüketim kullanılır (yalnızca açık kalan buzdolabı, dondurucu, modem vb.). Limit hesabındaki “günlük en fazla” evde geçecek günlere göre hesaplanır.</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
+        <div class="field"><label>Başlangıç</label><input type="date" id="yk-bas"></div>
+        <div class="field"><label>Bitiş</label><input type="date" id="yk-bit"></div>
+        <div class="field"><label>O günlerde günlük kWh</label><input type="text" inputmode="decimal" id="yk-kwh" value="1"></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="yk-save">Ekle</button></div>
+      </div>
+      <div id="yk-liste" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
       <h2>Takvim ayı sayaç verisi</h2>
       <p class="hint">Aydem / ADM'den alınan aylık tüketim (kWh). Yıllık 4.000 kWh hesabı takvim yılına göre yapıldığı için en doğru kaynak budur. Bir ay girilmemişse fatura dönemlerinden gün oranıyla hesaplanır.<br>İçinde bulunduğumuz ay için <b>Aydem MASS</b>'taki “bu ay” değerini girip <b>hangi güne kadar</b> olduğunu seçin (genellikle dün). Ay bittiğinde tam değeri girin ve tarihi boş bırakın.</p>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
@@ -453,7 +465,9 @@ function cihazGunluk(c, mi){
 }
 function planGunluk(mi){ let s=0; for(const k in cihazlar) s+=cihazGunluk(cihazlar[k],mi); return s; }
 const _planCache = {};
-function planDay(n){ const mi = +n2d(n).slice(5,7)-1; return planGunluk(mi); }
+// Evde olunmayan günler (ayarlar.yokluk = {id:{bas,bit,kwh}}): plan yerine o günler için girilen sabit tüketim
+function yoklukGunu(n){ const y=ayarlar.yokluk||{}; for(const k in y){ const r=y[k]; if(r&&r.bas&&r.bit&&n>=d2n(r.bas)&&n<=d2n(r.bit)) return +r.kwh||0; } return null; }
+function planDay(n){ const yk=yoklukGunu(n); if(yk!==null) return yk; const mi = +n2d(n).slice(5,7)-1; return planGunluk(mi); }
 
 // Gerçek günlük tüketim: önce takvim ayı sayaç verisi, yoksa fatura dönemi
 // Sayaç kaydı: tam ay için sayı, ay içinde kısmi okuma için {kwh, bitis:'YYYY-MM-DD'} (ayın 1'inden bitis gününe kadar)
@@ -565,15 +579,15 @@ function donemTahmin(a,b){
 function yilOzet(yil){
   const a=d2n(`${yil}-01-01`), b=d2n(`${yil}-12-31`);
   const sb = sonBilinenGun();
-  let gercek=0, plan=0, aylar=[];
+  let gercek=0, plan=0, aylar=[], yokGun=0, yokKwh=0;
   for(let m=0;m<12;m++){ aylar.push({ym:`${yil}-${String(m+1).padStart(2,'0')}`, g:0, p:0, gGun:0, pGun:0}); }
   for(let d=a; d<=b; d++){
     const mi = +n2d(d).slice(5,7)-1; const act=actualDay(d);
     if (act!==null){ gercek+=act; aylar[mi].g+=act; aylar[mi].gGun++; }
-    else { const pl=planDay(d); plan+=pl; aylar[mi].p+=pl; aylar[mi].pGun++; }
+    else { const pl=planDay(d); plan+=pl; aylar[mi].p+=pl; aylar[mi].pGun++; const yk=yoklukGunu(d); if(yk!==null){ yokGun++; yokKwh+=yk; } }
   }
   const kalanGun = Math.max(0, b - Math.max(sb, a-1));
-  return {gercek, plan, toplam:gercek+plan, aylar, sonBilinen:sb, kalanGun};
+  return {gercek, plan, toplam:gercek+plan, aylar, sonBilinen:sb, kalanGun, yokGun, yokKwh};
 }
 
 /* ======================= Tahmin anlık görüntüleri ======================= */
@@ -607,19 +621,20 @@ function renderOzet(){
   const o = yilOzet(yil);
   $('yil-badge').textContent = `${yil} takvim yılı`;
   const kalan = p.limit - o.gercek;
-  const gunluk = o.kalanGun>0 ? kalan/o.kalanGun : NaN;
-  const planGunOrt = o.kalanGun>0 ? o.plan/o.kalanGun : NaN;
+  const evGun = o.kalanGun - o.yokGun;  // evde geçecek kalan günler
+  const gunluk = evGun>0 ? (kalan - o.yokKwh)/evGun : NaN;
+  const planGunOrt = evGun>0 ? (o.plan - o.yokKwh)/evGun : NaN;
   const asim = o.toplam - p.limit;
   $('limit-tiles').innerHTML = `
     <div class="tile hi"><div class="lbl">Gerçekleşen</div><div class="val">${fmt0(o.gercek)} kWh</div><div class="sub">${o.sonBilinen>=d2n(yil+'-01-01')? 'son veri: '+trDate(n2d(Math.min(o.sonBilinen,d2n(yil+'-12-31')))) : 'henüz veri yok'}</div></div>
     <div class="tile ${asim>0?'bad':'good'}"><div class="lbl">Yıl sonu tahmini</div><div class="val">${fmt0(o.toplam)} kWh</div><div class="sub">${asim>0? fmt0(asim)+' kWh limit üstü' : fmt0(-asim)+' kWh limit altı'}</div></div>
-    <div class="tile ${kalan<0?'bad':''}"><div class="lbl">Limite kalan</div><div class="val">${fmt0(kalan)} kWh</div><div class="sub">${o.kalanGun} gün kaldı</div></div>
-    <div class="tile ${gunluk<planGunOrt?'warn':'good'}"><div class="lbl">Limit için günlük en fazla</div><div class="val">${o.kalanGun>0? fmt(Math.max(0,gunluk),1)+' kWh' : '—'}</div><div class="sub">planınız: ${o.kalanGun>0? fmt(planGunOrt,1)+' kWh/gün':'—'}</div></div>`;
+    <div class="tile ${kalan<0?'bad':''}"><div class="lbl">Limite kalan</div><div class="val">${fmt0(kalan)} kWh</div><div class="sub">${o.kalanGun} gün kaldı${o.yokGun? ` · ${o.yokGun} gün evde yok`:''}</div></div>
+    <div class="tile ${gunluk<planGunOrt?'warn':'good'}"><div class="lbl">Limit için günlük en fazla${o.yokGun?' (evdeyken)':''}</div><div class="val">${o.kalanGun>0? fmt(Math.max(0,gunluk),1)+' kWh' : '—'}</div><div class="sub">planınız: ${o.kalanGun>0? fmt(planGunOrt,1)+' kWh/gün':'—'}</div></div>`;
   const W = Math.max(p.limit, o.toplam)*1.05;
   $('limit-bar').innerHTML = `<div class="a" style="width:${o.gercek/W*100}%"></div><div class="p" style="left:${o.gercek/W*100}%;width:${o.plan/W*100}%"></div><div class="lim" style="left:${p.limit/W*100}%"></div>`;
   $('limit-note').innerHTML = o.kalanGun>0
     ? (gunluk<planGunOrt
-        ? `⚠️ Mevcut cihaz planıyla yılı <b>${fmt0(o.toplam)} kWh</b> ile kapatıyorsunuz. ${fmt0(p.limit)} kWh altında kalmak için kalan ${o.kalanGun} günde ortalama <b>${fmt(Math.max(0,gunluk),1)} kWh/gün</b> kullanmalısınız (plan: ${fmt(planGunOrt,1)}). Cihazlar sekmesinde en çok tüketenleri görebilirsiniz.`
+        ? `⚠️ Mevcut cihaz planıyla yılı <b>${fmt0(o.toplam)} kWh</b> ile kapatıyorsunuz. ${fmt0(p.limit)} kWh altında kalmak için evde geçecek ${evGun} günde ortalama <b>${fmt(Math.max(0,gunluk),1)} kWh/gün</b> kullanmalısınız (plan: ${fmt(planGunOrt,1)}). Cihazlar sekmesinde en çok tüketenleri görebilirsiniz.`
         : `✅ Mevcut planla ${fmt0(p.limit)} kWh limitinin altında kalıyorsunuz.`)
     : (o.toplam>p.limit? `Bu yıl ${fmt0(p.limit)} kWh limiti aşıldı; sonraki yıl son kaynak tarifesi devam eder.`:`Bu yıl limit altında kalındı.`);
 
@@ -944,6 +959,17 @@ function renderAyarlar(){
   const ks=Object.keys(sayac).sort().reverse();
   $('sayac-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>kWh</th><th></th></tr></thead><tbody>${ks.map(k=>{ const sv=sayacOku(k); return `<tr><td>${donemLabel(k)}${sv&&sv.kismi?` <span class="hint">(1–${+sv.bitis.slice(8,10)} arası)</span>`:''}</td><td>${fmt(sv?sv.kwh:NaN)}${sv&&sv.kismi?` <span class="hint">· ${fmt(sv.kwh/sv.gun,1)}/gün</span>`:''}</td><td><button class="icon-btn" onclick="sayacSil('${k}')">🗑️</button></td></tr>`;}).join('')}</tbody></table>`;
 }
+function renderYokluk(){
+  const y=ayarlar.yokluk||{}; const ks=Object.keys(y).sort((a,b)=>(y[a].bas<y[b].bas?-1:1));
+  $('yk-liste').innerHTML = ks.length? `<table><thead><tr><th>Dönem</th><th>Gün</th><th>kWh/gün</th><th>Toplam</th><th></th></tr></thead><tbody>${ks.map(k=>{ const r=y[k]; const g=d2n(r.bit)-d2n(r.bas)+1;
+    return `<tr><td>${trDate(r.bas)} – ${trDate(r.bit)}</td><td>${g}</td><td>${fmt(+r.kwh,1)}</td><td>${fmt(g*r.kwh,1)} kWh</td><td><button class="icon-btn" onclick="yoklukSil('${k}')">🗑️</button></td></tr>`; }).join('')}</tbody></table>` : '<p class="hint">Kayıt yok.</p>';
+}
+window.yoklukSil = k=>{ if(confirm('Bu dönem silinsin mi?')) db.ref(`${ROOT}/ayarlar/yokluk/${k}`).remove(); };
+$('yk-save').addEventListener('click',()=>{
+  const bas=$('yk-bas').value, bit=$('yk-bit').value, kwh=parseFloat(String($('yk-kwh').value).replace(',','.'));
+  if(!bas||!bit||bit<bas||isNaN(kwh)){ toast('Başlangıç, bitiş ve günlük kWh girin.',true); return; }
+  db.ref(`${ROOT}/ayarlar/yokluk`).push().set({bas,bit,kwh}).then(()=>{ toast('Kaydedildi.'); $('yk-bas').value=''; $('yk-bit').value=''; });
+});
 window.sayacSil = k=>{ if(confirm(donemLabel(k)+' silinsin mi?')) db.ref(`${ROOT}/sayac/${k}`).remove(); };
 $('sy-save').addEventListener('click',()=>{
   const ay=$('sy-ay').value, v=parseFloat(String($('sy-kwh').value).replace(',','.')), b=$('sy-bitis').value;
@@ -1036,7 +1062,7 @@ $('yil-sec').addEventListener('change', renderOzet);
 window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
 
 let _renderT=null;
-function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); { const ae=document.activeElement; const yaziyor = ae && $('dev-body').contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT'); if(!yaziyor) renderCihazTablo(); } renderFaturalar(); renderAyarlar(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
+function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); { const ae=document.activeElement; const yaziyor = ae && $('dev-body').contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT'); if(!yaziyor) renderCihazTablo(); } renderFaturalar(); renderAyarlar(); renderYokluk(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
 
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
