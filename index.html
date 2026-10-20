@@ -1045,15 +1045,16 @@ window.prizGizle = id=>{ const r=olcum&&olcum.cihazlar[id]; if(!confirm(`“${r?
 window.prizGizliAc = ()=>{ db.ref(`${ROOT}/ayarlar/gizliPriz`).remove().then(()=>toast('Gizli prizler tekrar gösteriliyor.')); };
 function prizEsle(id, key){
   const upd={};
-  for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id && k!==key) upd[`${k}/priz`]=null;
-  if(key){ Object.assign(upd,{[`${key}/priz`]:id, [`${key}/mod`]:'kwh', [`${key}/adet`]:1, [`${key}/gh`]:7, [`${key}/kaynak`]:'olculen'}); }
+  for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id && k!==key){ upd[`${k}/priz`]=null; upd[`${k}/prizTarih`]=null; }
+  // eşleştirme günü kaydedilir: priz başka bir cihazdan taşındıysa eski ölçümler yeni cihaza sayılmaz
+  if(key){ Object.assign(upd,{[`${key}/priz`]:id, [`${key}/prizTarih`]:n2d(todayN()), [`${key}/mod`]:'kwh', [`${key}/adet`]:1, [`${key}/gh`]:7, [`${key}/kaynak`]:'olculen'}); }
   db.ref(`${ROOT}/cihazlar`).update(upd).then(()=>{ toast(key? `${cihazlar[key].ad} prizle eşleştirildi.` : 'Eşleştirme kaldırıldı.'); setTimeout(olcumUygula,300); });
 }
 function olcumUygula(){
   if(!olcum || !olcum.cihazlar || !loaded.cihaz || !auth.currentUser) return;
   for(const [k,c] of Object.entries(cihazlar)){
     const r = c.priz && olcum.cihazlar[c.priz]; if(!r || !r.gunluk) continue;
-    const ay={}; for(const [g,v] of Object.entries(r.gunluk)){ const ym=g.slice(0,7); (ay[ym]=ay[ym]||[]).push(v); }
+    const ay={}; for(const [g,v] of Object.entries(r.gunluk)){ if(c.prizTarih && g < c.prizTarih) continue; const ym=g.slice(0,7); (ay[ym]=ay[ym]||[]).push(v); }
     const yeni = (c.aylik||Array(12).fill(0)).slice(); let degisti=false;
     for(const ym of Object.keys(ay).sort()){ const a=ay[ym]; if(a.length<3) continue;
       const ort=Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100; const mi=+ym.slice(5,7)-1;
