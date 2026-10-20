@@ -122,6 +122,19 @@ def gunluk_hesapla(logs, sc, gunler):
     return {g: round(v, 3) for g, v in res.items()}, "cur_power"
 
 
+def calisma_gucu(logs, sc):
+    """Cihaz çalışırken çektiği güç (W): son 7 gündeki cur_power kayıtlarından, bekleme değerleri ayıklanarak."""
+    k = 10 ** -sc.get("cur_power", 1)
+    w = sorted(float(l["value"]) * k for l in logs if l.get("code") == "cur_power")
+    if not w or w[-1] < 5:
+        return None
+    esik = max(5.0, w[-1] * 0.2)  # bekleme/standby değerlerini at
+    cal = [x for x in w if x >= esik]
+    bek = [x for x in w if x < esik]
+    return {"calismaW": round(cal[len(cal) // 2]), "maksW": round(w[-1]),
+            "beklemeW": round(bek[len(bek) // 2], 1) if bek else None, "kayit": len(cal)}
+
+
 def main():
     cid, sec = os.environ.get("TUYA_ACCESS_ID", "").strip(), os.environ.get("TUYA_ACCESS_SECRET", "").strip()
     if not cid or not sec:
@@ -135,6 +148,7 @@ def main():
     gunler = [(bugun - timedelta(days=i)).isoformat() for i in range(GUN_GERI, 0, -1)]  # bugün hariç (tamamlanmamış)
     bas = datetime.fromisoformat(gunler[0]).replace(tzinfo=TR)
     bit = datetime.fromisoformat(bugun.isoformat()).replace(tzinfo=TR)
+    guc_bas = simdi - timedelta(days=7)  # çalışma gücü için son 7 gün (log saklama süresi)
     devs = cihazlari_listele(api)
     print(f"{len(devs)} cihaz bulundu")
     for d in devs:
@@ -144,21 +158,26 @@ def main():
             continue  # enerji ölçmeyen cihaz
         sc = olcekler(api, did)
         try:
-            lg = loglar(api, did, "add_ele,cur_power", int(bas.timestamp() * 1000), int(bit.timestamp() * 1000) - 1)
-            gun, yontem = gunluk_hesapla(lg, sc, gunler)
+            lg = loglar(api, did, "add_ele,cur_power", int(min(bas, guc_bas).timestamp() * 1000), int(simdi.timestamp() * 1000))
+            gun_lg = [l for l in lg if int(l["event_time"]) < bit.timestamp() * 1000]
+            gun, yontem = gunluk_hesapla(gun_lg, sc, gunler)
+            guc = calisma_gucu(lg, sc)
         except Exception as e:
             print(f"  {d.get('name')}: log okunamadı: {e}")
-            gun, yontem = None, None
+            gun, yontem, guc = None, None, None
         rec = data["cihazlar"].setdefault(did, {"gunluk": {}})
         rec.update({"ad": d.get("name"), "kategori": d.get("category"), "online": d.get("online")})
         if "cur_power" in status:
             rec["anlikW"] = round(float(status["cur_power"]) * 10 ** -sc.get("cur_power", 1), 1)
             rec["anlikZaman"] = simdi.strftime("%Y-%m-%d %H:%M")
+        if guc:
+            guc["tarih"] = simdi.strftime("%Y-%m-%d")
+            rec["guc"] = guc
         if gun:
             rec["gunluk"].update(gun)
             rec["yontem"] = yontem
             rec["gunluk"] = dict(sorted(rec["gunluk"].items())[-400:])
-        print(f"  {d.get('name')}: {yontem or 'veri yok'} {gun or ''}")
+        print(f"  {d.get('name')}: {yontem or 'veri yok'} {gun or ''} {guc or ''}")
     # Tuya hesabından çıkarılan prizleri işaretle (geçmiş veri korunur, uygulama göstermez)
     mevcut = {d["id"] for d in devs}
     for did, rec in data["cihazlar"].items():
