@@ -2,7 +2,7 @@ name: Akıllı priz ölçümlerini al
 
 on:
   schedule:
-    - cron: "41 2 * * *"   # her gün 05:41 (TSİ)
+    - cron: "41 2,8,14,20 * * *"   # günde 4 kez: 05:41, 11:41, 17:41, 23:41 (TSİ)
   workflow_dispatch:
 
 permissions:
