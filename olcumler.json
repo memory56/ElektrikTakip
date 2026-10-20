@@ -6,20 +6,21 @@
     "2026-10-16": 2.296,
     "2026-10-17": 1.407,
     "2026-10-18": 1.768,
-    "2026-10-19": 2.088
+    "2026-10-19": 2.088,
+    "2026-10-20": 0.477
    },
    "ad": "3 - Termosifon",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1738,
     "maksW": 1777,
     "beklemeW": 0.0,
     "kayit": 24,
-    "tarih": "2026-10-20"
+    "tarih": "2026-10-21"
    }
   },
   "608610038caab5d88a54": {
@@ -28,20 +29,21 @@
     "2026-10-16": 0.0,
     "2026-10-17": 0.0,
     "2026-10-18": 0.0,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 1.233
    },
    "ad": "1 - Çamaşır MAK",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
-   "yontem": "cur_power",
+   "anlikZaman": "2026-10-21 02:22",
+   "yontem": "add_ele",
    "guc": {
     "calismaW": 2148,
     "maksW": 2148,
     "beklemeW": 110.8,
     "kayit": 2,
-    "tarih": "2026-10-20"
+    "tarih": "2026-10-21"
    }
   },
   "bf145e8184512a154cwoq6": {
@@ -50,14 +52,15 @@
     "2026-10-16": 0.0,
     "2026-10-17": 0.0,
     "2026-10-18": 0.0,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.004
    },
    "ad": "5 - Arıtma",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
-   "yontem": "cur_power"
+   "anlikZaman": "2026-10-21 02:22",
+   "yontem": "add_ele"
   },
   "608610038caab5dfba47": {
    "gunluk": {
@@ -65,13 +68,14 @@
     "2026-10-16": 0.0,
     "2026-10-17": 0.0,
     "2026-10-18": 0.0,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.0
    },
    "ad": "4 - Bulaşık MAK. ",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "yontem": "cur_power"
   },
   "bfbf453ada572d7f77e9ca": {
@@ -80,20 +84,21 @@
     "2026-10-16": 0.211,
     "2026-10-17": 0.195,
     "2026-10-18": 0.004,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.178
    },
    "ad": "7- Veranda TV",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
     "maksW": 100,
     "beklemeW": 8.8,
     "kayit": 71,
-    "tarih": "2026-10-20"
+    "tarih": "2026-10-21"
    }
   },
   "608610038caab5d7c74b": {
@@ -102,20 +107,21 @@
     "2026-10-16": 0.0,
     "2026-10-17": 0.12,
     "2026-10-18": 0.0,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.747
    },
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 3.9,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikW": 105.9,
+   "anlikZaman": "2026-10-21 02:22",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 338,
     "maksW": 1348,
-    "beklemeW": 3.9,
-    "kayit": 3,
-    "tarih": "2026-10-20"
+    "beklemeW": 9.4,
+    "kayit": 4,
+    "tarih": "2026-10-21"
    }
   },
   "bf9c6a18b5fe5c1404acsb": {
@@ -124,60 +130,76 @@
     "2026-10-16": 0.308,
     "2026-10-17": 0.959,
     "2026-10-18": 0.0,
-    "2026-10-19": 0.0
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.147
    },
    "ad": "6 - Kettle",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1348,
     "maksW": 1772,
     "beklemeW": 0.0,
     "kayit": 10,
-    "tarih": "2026-10-20"
+    "tarih": "2026-10-21"
    }
   },
   "bf6675e15035ea146ee7on": {
-   "gunluk": {},
+   "gunluk": {
+    "2026-10-18": 0.0,
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.402
+   },
    "ad": "8-LG TV",
    "kategori": "cz",
    "online": true,
    "anlikW": 7.5,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "guc": {
-    "calismaW": 109,
-    "maksW": 122,
+    "calismaW": 107,
+    "maksW": 125,
     "beklemeW": 7.3,
-    "kayit": 14,
-    "tarih": "2026-10-20"
-   }
+    "kayit": 26,
+    "tarih": "2026-10-21"
+   },
+   "yontem": "add_ele"
   },
   "bf8f7ad866f46e88a2apyv": {
-   "gunluk": {},
+   "gunluk": {
+    "2026-10-18": 0.0,
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.174
+   },
    "ad": "9-Dondurucu",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41",
+   "anlikZaman": "2026-10-21 02:22",
    "guc": {
-    "calismaW": 74,
+    "calismaW": 73,
     "maksW": 75,
     "beklemeW": 0.0,
-    "kayit": 15,
-    "tarih": "2026-10-20"
-   }
+    "kayit": 32,
+    "tarih": "2026-10-21"
+   },
+   "yontem": "add_ele"
   },
   "bf16bc61e3aa883c523kiq": {
-   "gunluk": {},
+   "gunluk": {
+    "2026-10-18": 0.0,
+    "2026-10-19": 0.0,
+    "2026-10-20": 0.003
+   },
    "ad": "10-Sebil",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-20 21:41"
+   "anlikZaman": "2026-10-21 02:22",
+   "yontem": "add_ele"
   }
  },
- "guncelleme": "2026-10-20 21:41"
+ "guncelleme": "2026-10-21 02:22"
 }
