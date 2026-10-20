@@ -321,10 +321,11 @@
 
     <div class="card">
       <h2>Takvim ayı sayaç verisi</h2>
-      <p class="hint">Aydem / ADM'den alınan aylık tüketim (kWh). Yıllık 4.000 kWh hesabı takvim yılına göre yapıldığı için en doğru kaynak budur. Bir ay girilmemişse fatura dönemlerinden gün oranıyla hesaplanır.</p>
+      <p class="hint">Aydem / ADM'den alınan aylık tüketim (kWh). Yıllık 4.000 kWh hesabı takvim yılına göre yapıldığı için en doğru kaynak budur. Bir ay girilmemişse fatura dönemlerinden gün oranıyla hesaplanır.<br>İçinde bulunduğumuz ay için <b>Aydem MASS</b>'taki “bu ay” değerini girip <b>hangi güne kadar</b> olduğunu seçin (genellikle dün). Ay bittiğinde tam değeri girin ve tarihi boş bırakın.</p>
       <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(130px,1fr))">
         <div class="field"><label>Ay</label><input type="month" id="sy-ay"></div>
-        <div class="field"><label>Tüketim (kWh)</label><input type="number" id="sy-kwh" step="0.01"></div>
+        <div class="field"><label>Tüketim (kWh)</label><input type="text" inputmode="decimal" id="sy-kwh"></div>
+        <div class="field"><label>Hangi güne kadar? (ay bitmediyse)</label><input type="date" id="sy-bitis"></div>
         <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="sy-save">Ekle / güncelle</button></div>
       </div>
       <div class="table-scroll" id="sayac-tablo" style="margin-top:10px;max-height:300px"></div>
@@ -455,6 +456,13 @@ const _planCache = {};
 function planDay(n){ const mi = +n2d(n).slice(5,7)-1; return planGunluk(mi); }
 
 // Gerçek günlük tüketim: önce takvim ayı sayaç verisi, yoksa fatura dönemi
+// Sayaç kaydı: tam ay için sayı, ay içinde kısmi okuma için {kwh, bitis:'YYYY-MM-DD'} (ayın 1'inden bitis gününe kadar)
+function sayacOku(ym){
+  const v=sayac[ym]; if(v===undefined||v===null) return null;
+  const bas=d2n(ym+'-01');
+  if (typeof v==='object'){ const son=d2n(v.bitis); return {kwh:+v.kwh, son, gun:son-bas+1, kismi:true, bitis:v.bitis}; }
+  const son=d2n(ym+'-'+String(dim(ym)).padStart(2,'0')); return {kwh:+v, son, gun:dim(ym), kismi:false};
+}
 let _invIndex = [];
 function buildInvIndex(){
   _invIndex = Object.values(faturalar).filter(f=>f.ilkTarih&&f.sonTarih&&f.kwh>0)
@@ -462,13 +470,15 @@ function buildInvIndex(){
 }
 function actualDay(n){
   const ym = ymOf(n);
-  if (sayac[ym]!==undefined && sayac[ym]!==null) return sayac[ym]/dim(ym);
+  const sv = sayacOku(ym);
+  if (sv){ if (n > sv.son) { /* ayın henüz ölçülmemiş günleri: fatura varsa ondan, yoksa plan */ }
+           else return sv.kwh / sv.gun; }
   for (const r of _invIndex){ if(n>=r.a && n<=r.b) return r.k/(r.b-r.a+1); }
   return null;
 }
 function sonBilinenGun(){
   let m = -Infinity;
-  for(const ym in sayac){ const e=d2n(ym+'-'+String(dim(ym)).padStart(2,'0')); if(e>m) m=e; }
+  for(const ym in sayac){ const sv=sayacOku(ym); if(sv && sv.son>m) m=sv.son; }
   for(const r of _invIndex){ if(r.b>m) m=r.b; }
   return m;
 }
@@ -932,10 +942,19 @@ function renderAyarlar(){
   $('ptf-badge').textContent = prices? `son güncelleme ${prices.guncelleme}` : '';
   // sayaç
   const ks=Object.keys(sayac).sort().reverse();
-  $('sayac-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>kWh</th><th></th></tr></thead><tbody>${ks.map(k=>`<tr><td>${donemLabel(k)}</td><td>${fmt(sayac[k])}</td><td><button class="icon-btn" onclick="sayacSil('${k}')">🗑️</button></td></tr>`).join('')}</tbody></table>`;
+  $('sayac-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>kWh</th><th></th></tr></thead><tbody>${ks.map(k=>{ const sv=sayacOku(k); return `<tr><td>${donemLabel(k)}${sv&&sv.kismi?` <span class="hint">(1–${+sv.bitis.slice(8,10)} arası)</span>`:''}</td><td>${fmt(sv?sv.kwh:NaN)}${sv&&sv.kismi?` <span class="hint">· ${fmt(sv.kwh/sv.gun,1)}/gün</span>`:''}</td><td><button class="icon-btn" onclick="sayacSil('${k}')">🗑️</button></td></tr>`;}).join('')}</tbody></table>`;
 }
 window.sayacSil = k=>{ if(confirm(donemLabel(k)+' silinsin mi?')) db.ref(`${ROOT}/sayac/${k}`).remove(); };
-$('sy-save').addEventListener('click',()=>{ const ay=$('sy-ay').value, v=parseFloat($('sy-kwh').value); if(!ay||isNaN(v)){toast('Ay ve kWh girin.',true);return;} db.ref(`${ROOT}/sayac/${ay}`).set(v).then(()=>{toast('Kaydedildi.'); $('sy-kwh').value='';}); });
+$('sy-save').addEventListener('click',()=>{
+  const ay=$('sy-ay').value, v=parseFloat(String($('sy-kwh').value).replace(',','.')), b=$('sy-bitis').value;
+  if(!ay||isNaN(v)){toast('Ay ve kWh girin.',true);return;}
+  let kayit=v;
+  if(b){ if(b.slice(0,7)!==ay){ toast('Tarih seçilen ay içinde olmalı.',true); return; }
+    if(+b.slice(8,10) < dim(ay)) kayit={kwh:v, bitis:b}; }
+  db.ref(`${ROOT}/sayac/${ay}`).set(kayit).then(()=>{toast('Kaydedildi.'); $('sy-kwh').value=''; $('sy-bitis').value='';});
+});
+(function(){ const d=new Date(); d.setDate(d.getDate()-1); const iso=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())).toISOString().slice(0,10);
+  $('sy-ay').value=iso.slice(0,7); $('sy-bitis').value=iso; })();
 $('s-save').addEventListener('click',()=>{
   const g=id=>{ const v=parseFloat($(id).value); return isNaN(v)? null : v; };
   const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limit:g('s-limit')??4000,
