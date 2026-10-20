@@ -1,0 +1,34 @@
+name: Priz kuralları (termosifon sınırı)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # 15 dakikada bir (GitHub bazen gecikebilir)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: priz-kural
+  cancel-in-progress: false
+
+jobs:
+  kural:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kuralları uygula
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_ACCESS_SECRET: ${{ secrets.TUYA_ACCESS_SECRET }}
+          TUYA_REGION: ${{ secrets.TUYA_REGION }}
+        run: python3 scripts/kural_calistir.py
+      - name: Durumu kaydet
+        run: |
+          [ -f kural_durum.json ] || exit 0
+          git add kural_durum.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "kural-botu"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -q -m "Kural durumu ($(date +%H:%M))"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

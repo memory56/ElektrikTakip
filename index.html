@@ -240,6 +240,7 @@
 
     <div class="card">
       <h2>Akıllı priz ölçümleri <span class="badge" id="priz-badge"></span></h2>
+      <div id="kural-icerik"></div>
       <div id="priz-icerik"></div>
     </div>
 
@@ -948,7 +949,24 @@ $('yek-save').addEventListener('click',()=>{
 
 
 /* ======================= Akıllı priz ölçümleri (Smart Life / Tuya) ======================= */
-let olcum = null;
+let olcum = null, kurallar = null, kuralDurum = null;
+Promise.all([fetch('kurallar.json?ts='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null), fetch('kural_durum.json?ts='+Date.now()).then(r=>r.ok?r.json():null).catch(()=>null)])
+  .then(([k,d])=>{ kurallar=k; kuralDurum=d; renderKurallar(); });
+function renderKurallar(){
+  const box=$('kural-icerik'); if(!box) return;
+  const ks=(kurallar&&kurallar.kurallar||[]).filter(k=>k.aktif!==false);
+  if(!ks.length){ box.innerHTML=''; return; }
+  const bugun=n2d(todayN());
+  box.innerHTML = ks.map(k=>{ const d=(kuralDurum&&kuralDurum[k.cihazId])||{}; const guncel = d.gun===bugun;
+    const kwh = guncel? d.bugunKwh : null; const oran = kwh!=null? Math.min(1, kwh/k.gunlukLimitKwh) : 0;
+    const durumYazi = !guncel? 'bugün henüz kontrol edilmedi' : (d.kapatildi? `⛔ sınır aşıldı, ${d.kapatildi}'de kapatıldı${d.acik?' · sonra elle açıldı':''}` : (d.acik? '🟢 açık':'⚪ kapalı'));
+    return `<div class="tile" style="margin-bottom:10px"><div class="lbl">Kural · ${esc(k.ad)}</div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;margin-top:4px">
+        <div class="val" style="font-size:1.1rem">${kwh!=null? fmt(kwh,2):'—'} / ${fmt(k.gunlukLimitKwh,1)} kWh</div>
+        <div class="sub">${durumYazi}${guncel&&d.kontrol? ' · son kontrol '+d.kontrol.slice(11):''}</div></div>
+      <div class="progress" style="margin:8px 0 2px"><div class="a" style="width:${oran*100}%;background:${oran>=1?'var(--danger)':(oran>.8?'var(--warn)':'var(--s-actual)')}"></div></div>
+      <div class="sub">Günlük tüketim sınıra ulaşınca priz otomatik kapanır (yaklaşık 15 dakikada bir kontrol). Kapandıktan sonra elle açarsanız o gün tekrar kapatılmaz.</div></div>`; }).join('');
+}
 fetch('olcumler.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ olcum=j; renderPrizler(); olcumUygula(); }).catch(()=>{ olcum=null; renderPrizler(); });
 function prizSon7(rec){ const ks=Object.keys(rec.gunluk||{}).sort().slice(-7); return ks.map(k=>({g:k,v:rec.gunluk[k]})); }
 function renderPrizler(){

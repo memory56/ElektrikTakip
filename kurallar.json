@@ -1,0 +1,13 @@
+{
+  "aciklama": "Akıllı priz kuralları. Her 15 dakikada bir GitHub tarafından kontrol edilir. Kural bir günde bir kez uygulanır; kapandıktan sonra prizi elle açarsanız o gün tekrar kapatılmaz.",
+  "kurallar": [
+    {
+      "ad": "Termosifon günlük sınır",
+      "cihazId": "608610038caab5d7cb7e",
+      "cihazAdi": "Termosifon",
+      "gunlukLimitKwh": 1.5,
+      "eylem": "kapat",
+      "aktif": true
+    }
+  ]
+}

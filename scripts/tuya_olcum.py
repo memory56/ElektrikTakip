@@ -26,18 +26,21 @@ class Tuya:
     def __init__(self, cid, secret, host):
         self.cid, self.secret, self.host, self.token = cid, secret, host, ""
 
-    def _req(self, path, query=None, auth=True):
+    def _req(self, path, query=None, auth=True, method="GET", body=None):
         query = query or {}
         q = "&".join(f"{k}={query[k]}" for k in sorted(query))
         url = path + ("?" + q if q else "")
         t = str(int(time.time() * 1000))
-        string_to_sign = "GET\n" + EMPTY_SHA + "\n\n" + url
+        data = json.dumps(body, separators=(",", ":")).encode() if body is not None else b""
+        string_to_sign = method + "\n" + hashlib.sha256(data).hexdigest() + "\n\n" + url
         msg = self.cid + (self.token if auth else "") + t + string_to_sign
         sign = hmac.new(self.secret.encode(), msg.encode(), hashlib.sha256).hexdigest().upper()
         h = {"client_id": self.cid, "sign": sign, "t": t, "sign_method": "HMAC-SHA256"}
         if auth:
             h["access_token"] = self.token
-        req = urllib.request.Request(self.host + url, headers=h)
+        if body is not None:
+            h["Content-Type"] = "application/json"
+        req = urllib.request.Request(self.host + url, headers=h, data=data if body is not None else None, method=method)
         with urllib.request.urlopen(req, timeout=30) as r:
             j = json.loads(r.read().decode())
         if not j.get("success"):
@@ -49,6 +52,9 @@ class Tuya:
 
     def get(self, path, query=None):
         return self._req(path, query)
+
+    def post(self, path, body):
+        return self._req(path, None, method="POST", body=body)
 
 
 def cihazlari_listele(api):
