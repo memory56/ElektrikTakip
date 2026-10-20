@@ -785,7 +785,9 @@ function renderCihazTablo(){
   $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
     return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
       <td><select data-f="mod"><option value="saat" ${c.mod!=='kwh'?'selected':''}>W × saat</option><option value="kwh" ${c.mod==='kwh'?'selected':''}>kWh/gün</option></select></td>
-      <td><input class="n" type="number" data-f="guc" value="${c.guc??''}" step="1"></td>
+      <td>${c.priz && olcum && olcum.cihazlar && olcum.cihazlar[c.priz] && olcum.cihazlar[c.priz].guc
+        ? `<input class="n" type="number" data-f="guc" value="${c.guc??''}" step="1" readonly style="color:var(--accent);font-weight:600" title="Prizden ölçülen çalışma gücü (son 7 gün) — otomatik güncellenir">`
+        : `<input class="n" type="number" data-f="guc" value="${c.guc??''}" step="1">`}</td>
       <td><input class="m" type="number" data-f="adet" value="${c.adet??1}" step="1" min="0"></td>
       <td><input class="m" type="number" data-f="gh" value="${c.gh??7}" step="1" min="0" max="7"></td>
       <td><select data-f="kaynak"><option value="olculen" ${c.kaynak==='olculen'?'selected':''}>Ölçülen</option><option value="tahmin" ${c.kaynak!=='olculen'?'selected':''}>Tahmin</option></select></td>
@@ -1060,6 +1062,12 @@ function olcumUygula(){
       const ort=Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100; const mi=+ym.slice(5,7)-1;
       if(Math.abs((+yeni[mi]||0)-ort)>0.005){ yeni[mi]=ort; degisti=true; } }
     if(degisti) db.ref(`${ROOT}/cihazlar/${k}/aylik`).set(yeni);
+    // Güç (W): prizden ölçülen "çalışırken" gücü
+    // (priz son 7 gün içinde başka cihazda kullanıldıysa o ölçüm karışık olur; o kayıtlar düşene kadar beklenir)
+    const pencere = r.guc && n2d(d2n(r.guc.tarih)-7);
+    const karisik = r.guc && c.prizTarih && Object.entries(r.gunluk).some(([g,v])=>g>=pencere && g<c.prizTarih && v>0.05);
+    if(r.guc && r.guc.calismaW && !karisik && +c.guc !== r.guc.calismaW)
+      db.ref(`${ROOT}/cihazlar/${k}/guc`).set(r.guc.calismaW);
   }
 }
 
