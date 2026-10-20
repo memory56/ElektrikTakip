@@ -159,6 +159,13 @@ def main():
             rec["yontem"] = yontem
             rec["gunluk"] = dict(sorted(rec["gunluk"].items())[-400:])
         print(f"  {d.get('name')}: {yontem or 'veri yok'} {gun or ''}")
+    # Tuya hesabından çıkarılan prizleri işaretle (geçmiş veri korunur, uygulama göstermez)
+    mevcut = {d["id"] for d in devs}
+    for did, rec in data["cihazlar"].items():
+        if did in mevcut:
+            rec.pop("kaldirildi", None)
+        else:
+            rec["kaldirildi"] = True
     data["guncelleme"] = simdi.strftime("%Y-%m-%d %H:%M")
     OUT.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
     return 0

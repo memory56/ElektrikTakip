@@ -1016,7 +1016,10 @@ fetch('olcumler.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(j=>{ olcu
 function prizSon7(rec){ const ks=Object.keys(rec.gunluk||{}).sort().slice(-7); return ks.map(k=>({g:k,v:rec.gunluk[k]})); }
 function renderPrizler(){
   const box=$('priz-icerik'); if(!box) return;
-  const list = olcum && olcum.cihazlar ? Object.entries(olcum.cihazlar) : [];
+  const gizli = ayarlar.gizliPriz || {};
+  const tum = olcum && olcum.cihazlar ? Object.entries(olcum.cihazlar).filter(([id,r])=>!r.kaldirildi) : [];
+  const list = tum.filter(([id])=>!gizli[id]);
+  const gizliSay = tum.length - list.length;
   if(!list.length){
     $('priz-badge').textContent='henüz veri yok';
     box.innerHTML='<p class="hint">Smart Life prizlerinin günlük kWh değerleri her sabah otomatik okunur ve buraya gelir. Bunun için Tuya geliştirici hesabının GitHub\'a bağlanması gerekiyor (kurulum adımları sohbette). Bağlandıktan sonraki ilk sabah prizler burada listelenir; her prizi aşağıdaki cihazlardan biriyle eşleştirmeniz yeterli.</p>';
@@ -1027,14 +1030,19 @@ function renderPrizler(){
   const bagli = id => Object.entries(cihazlar).find(([k,c])=>c.priz===id);
   const opts = id => { const b=bagli(id); return '<option value="">— eşleştirilmedi —</option>'+Object.entries(cihazlar).sort((a,b)=>(a[1].sira??0)-(b[1].sira??0)).map(([k,c])=>`<option value="${k}" ${b&&b[0]===k?'selected':''}>${esc(c.ad)}</option>`).join(''); };
   box.innerHTML = `<p class="hint">Bir prizi cihazla eşleştirdiğinizde o cihazın ilgili aylardaki değeri ölçülen günlük kWh ortalamasıyla otomatik güncellenir (ayda en az 3 gün veri varsa).</p>
-  <div class="table-scroll"><table><thead><tr><th>Priz (Smart Life)</th><th>Anlık</th>${gunler.map(g=>`<th>${g.slice(8,10)}.${g.slice(5,7)}</th>`).join('')}<th>7 gün ort.</th><th>Bağlı cihaz</th></tr></thead><tbody>${
+  <div class="table-scroll"><table><thead><tr><th>Priz (Smart Life)</th><th>Anlık</th>${gunler.map(g=>`<th>${g.slice(8,10)}.${g.slice(5,7)}</th>`).join('')}<th>7 gün ort.</th><th>Bağlı cihaz</th><th></th></tr></thead><tbody>${
     list.map(([id,r])=>{ const s7=prizSon7(r); const ort=s7.length? s7.reduce((a,x)=>a+x.v,0)/s7.length : NaN;
       return `<tr><td>${r.online===false?'⚪':'🟢'} ${esc(r.ad||id)}</td><td title="${esc(r.anlikZaman||'')}">${r.anlikW!=null? fmt0(r.anlikW)+' W':'—'}</td>
       ${gunler.map(g=>`<td>${r.gunluk&&r.gunluk[g]!=null? fmt(r.gunluk[g],2):'—'}</td>`).join('')}
-      <td><b>${fmt(ort,2)}</b> kWh</td><td><select data-priz="${id}" style="min-width:170px">${opts(id)}</select></td></tr>`; }).join('')
-  }</tbody></table></div><p class="hint" style="margin-top:6px">Değerler kWh/gün. “Anlık” son okuma anındaki güçtür.</p>`;
+      <td><b>${fmt(ort,2)}</b> kWh</td><td><select data-priz="${id}" style="min-width:170px">${opts(id)}</select></td><td><button class="icon-btn" title="Listeden kaldır" onclick="prizGizle('${id}')">🗑️</button></td></tr>`; }).join('')
+  }</tbody></table></div><p class="hint" style="margin-top:6px">Değerler kWh/gün. “Anlık” son okuma anındaki güçtür. Yeni prizler Smart Life'a eklendikten sonraki ilk okumada (günde 4 kez) listeye kendiliğinden gelir.${gizliSay? ` · ${gizliSay} priz gizli — <a href="#" onclick="prizGizliAc();return false" style="color:var(--accent)">göster</a>`:''}</p>`;
   box.querySelectorAll('select[data-priz]').forEach(sel=>sel.addEventListener('change',()=>prizEsle(sel.dataset.priz, sel.value)));
 }
+window.prizGizle = id=>{ const r=olcum&&olcum.cihazlar[id]; if(!confirm(`“${r?r.ad:id}” prizi listeden kaldırılsın mı? (Eşleştirmesi de kaldırılır. Tamamen silmek için Smart Life'tan da çıkarın.)`)) return;
+  const upd={[`ayarlar/gizliPriz/${id}`]:true};
+  for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id) upd[`cihazlar/${k}/priz`]=null;
+  db.ref(ROOT).update(upd).then(()=>toast('Priz listeden kaldırıldı.')); };
+window.prizGizliAc = ()=>{ db.ref(`${ROOT}/ayarlar/gizliPriz`).remove().then(()=>toast('Gizli prizler tekrar gösteriliyor.')); };
 function prizEsle(id, key){
   const upd={};
   for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id && k!==key) upd[`${k}/priz`]=null;
