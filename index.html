@@ -1131,8 +1131,27 @@ auth.getRedirectResult().then(r=>{
   if (flag && !(r&&r.user) && !auth.currentUser) setAuthStatus('Yönlendirmeyle giriş tamamlanamadı. Uygulamayı Chrome\'da açıp oradan giriş yapın; giriş bir kez yapılınca ana ekran uygulaması da açık kalır.',true);
 }).catch(err=>setAuthStatus('Giriş hatası: '+hataMesaji(err),true));
 let _inited=false;
+/* Sohbetten hazırlanan ayar güncellemeleri (guncellemeler.json): her biri bir kez uygulanır */
+function guncellemeUygula(){
+  fetch('guncellemeler.json?ts='+Date.now()).then(r=>r.ok?r.json():null).then(async j=>{
+    if(!j || !Array.isArray(j.islemler)) return;
+    const ay = (await db.ref(`${ROOT}/ayarlar`).once('value')).val() || {};
+    const yapilan = ay.uygulananGuncelleme || {};
+    for(const op of j.islemler){
+      if(!op.id || yapilan[op.id]) continue;
+      if(op.tip==='yokluk'){
+        const y = ay.yokluk || {};
+        const k = Object.keys(y).find(k=>y[k] && y[k].bas===op.bas);
+        const rec = {bas:op.bas, bit:op.bit, kwh:+op.kwh};
+        if(k) await db.ref(`${ROOT}/ayarlar/yokluk/${k}`).set(rec); else await db.ref(`${ROOT}/ayarlar/yokluk`).push().set(rec);
+      }
+      await db.ref(`${ROOT}/ayarlar/uygulananGuncelleme/${op.id}`).set(n2d(todayN()));
+      if(op.mesaj) toast(op.mesaj);
+    }
+  }).catch(e=>console.warn('guncellemeler', e));
+}
 auth.onAuthStateChanged(user=>{
-  if (user){ $('auth-overlay').style.display='none'; $('userbar').style.display='flex'; $('user-email').textContent=user.email||'Giriş yapıldı'; if(!_inited){_inited=true; initData();} }
+  if (user){ $('auth-overlay').style.display='none'; $('userbar').style.display='flex'; $('user-email').textContent=user.email||'Giriş yapıldı'; if(!_inited){_inited=true; initData(); setTimeout(guncellemeUygula,1500);} }
   else { $('auth-overlay').style.display='flex'; $('userbar').style.display='none'; }
 });
 window.addEventListener('pageshow',e=>{ if(e.persisted) location.reload(); });

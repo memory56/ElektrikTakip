@@ -1,0 +1,9 @@
+{
+ "aciklama": "Sohbetten hazırlanan tek seferlik ayar güncellemeleri. Uygulama girişte okur, her işlemi bir kez uygular.",
+ "islemler": [
+  {"id": "2026-10-22-yokluk-kasim", "tip": "yokluk", "bas": "2026-10-31", "bit": "2026-11-09", "kwh": 2.5,
+   "mesaj": "Yokluk dönemi eklendi: 31 Eki – 9 Kas, 2,5 kWh/gün"},
+  {"id": "2026-10-22-yokluk-aralik", "tip": "yokluk", "bas": "2026-12-25", "bit": "2026-12-31", "kwh": 2.5,
+   "mesaj": "25–31 Ara yokluk tüketimi 2,5 kWh/gün olarak güncellendi"}
+ ]
+}
