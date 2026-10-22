@@ -3,9 +3,9 @@
   "gun": "2026-10-22",
   "ad": "Termosifon",
   "limit": 1.5,
-  "bugunKwh": 0.984,
-  "acik": true,
-  "kontrol": "2026-10-22 18:25"
+  "bugunKwh": 1.539,
+  "acik": false,
+  "kontrol": "2026-10-22 22:18"
  },
- "guncelleme": "2026-10-22 18:25"
+ "guncelleme": "2026-10-22 22:18"
 }
