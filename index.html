@@ -187,6 +187,13 @@
       <div class="progress" id="limit-bar"></div>
       <div class="legend"><span><i style="background:var(--s-actual)"></i>Gerçekleşen</span><span><i style="background:var(--s-plan)"></i>Plan / tahmin</span><span><i style="background:var(--text);width:3px"></i>Limit</span></div>
       <p class="hint" id="limit-note"></p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-top:8px">
+        <div class="field"><label>Okuma tarihi</label><input type="date" id="en-tarih"></div>
+        <div class="field"><label>Saat</label><input type="time" id="en-saat"></div>
+        <div class="field"><label>Sayaç endeksi (kWh)</label><input type="text" inputmode="decimal" id="en-deger" placeholder="ör. 34964,7"></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="en-save">Endeksi ekle</button></div>
+      </div>
+      <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Girilen sayaç okumaları</summary><div id="en-liste" style="margin-top:6px"></div></details>
     </div>
 
     <div class="card">
@@ -306,6 +313,7 @@
         <div class="field"><label>Son kaynak katsayısı K</label><input type="number" id="s-k" step="0.0001" placeholder="otomatik"></div>
         <div class="field"><label>Kalibrasyon (boş = otomatik)</label><input type="number" id="s-kal" step="0.001" placeholder="otomatik"></div>
         <div class="field"><label>Yıllık limit (kWh)</label><input type="number" id="s-limit" step="1"></div>
+        <div class="field"><label>Limit nasıl sayılsın?</label><select id="s-limityontem"><option value="fatura">Fatura dönemleri (daha güvenli)</option><option value="takvim">Takvim yılı (1 Oca – 31 Ara)</option></select></div>
         <div class="field"><label>ETV oranı (%)</label><input type="number" id="s-etv" step="0.01"></div>
         <div class="field"><label>KDV oranı (%)</label><input type="number" id="s-kdv" step="0.01"></div>
       </div>
@@ -481,8 +489,38 @@ let _invIndex = [];
 function buildInvIndex(){
   _invIndex = Object.values(faturalar).filter(f=>f.ilkTarih&&f.sonTarih&&f.kwh>0)
     .map(f=>({a:d2n(f.ilkTarih), b:d2n(f.sonTarih), k:f.kwh})).sort((x,y)=>x.a-y.a);
+  buildEndeks();
 }
+/* Sayaç endeksleri: faturaların ilk/son endeksleri + elle okunan endeksler (ayarlar.endeksler = {id:{tarih,saat,endeks}}).
+   Zaman ekseni: gün numarası + gün içi kesir. Fatura son endeksi okuma gününün sonunda, ilk endeksi başında kabul edilir. */
+let _endeks = [];
+function buildEndeks(){
+  const pts=[];
+  for(const f of Object.values(faturalar)){
+    if(f.ilkTarih && +f.ilkEndeks>0) pts.push({t:d2n(f.ilkTarih), e:+f.ilkEndeks, k:'fatura'});
+    if(f.sonTarih && +f.sonEndeks>0) pts.push({t:d2n(f.sonTarih)+1, e:+f.sonEndeks, k:'fatura'});
+  }
+  for(const r of Object.values(ayarlar.endeksler||{})){
+    if(!r || !r.tarih || !(+r.endeks>0)) continue;
+    const [h,m]=String(r.saat||'12:00').split(':').map(Number);
+    pts.push({t:d2n(r.tarih)+((h||0)*60+(m||0))/1440, e:+r.endeks, k:'okuma', tarih:r.tarih, saat:r.saat||''});
+  }
+  pts.sort((a,b)=>a.t-b.t);
+  const out=[];
+  for(const q of pts){ const l=out[out.length-1];
+    if(l && Math.abs(l.t-q.t)<0.01){ if(q.k==='okuma') out[out.length-1]=q; continue; }
+    if(l && q.e<l.e) continue;  // geri giden endeks: hatalı giriş
+    out.push(q); }
+  _endeks=out;
+}
+function endeksAt(t){
+  const E=_endeks; if(!E.length || t<E[0].t || t>E[E.length-1].t) return null;
+  for(let i=1;i<E.length;i++){ const a=E[i-1], b=E[i]; if(t<=b.t) return a.e+(b.e-a.e)*(t-a.t)/((b.t-a.t)||1); }
+  return E[E.length-1].e;
+}
+function endeksSon(){ return _endeks.length? _endeks[_endeks.length-1] : null; }
 function actualDay(n){
+  { const e0=endeksAt(n), e1=endeksAt(n+1); if(e0!==null && e1!==null) return e1-e0; }
   const ym = ymOf(n);
   const sv = sayacOku(ym);
   if (sv){ if (n > sv.son) { /* ayın henüz ölçülmemiş günleri: fatura varsa ondan, yoksa plan */ }
@@ -494,6 +532,7 @@ function sonBilinenGun(){
   let m = -Infinity;
   for(const ym in sayac){ const sv=sayacOku(ym); if(sv && sv.son>m) m=sv.son; }
   for(const r of _invIndex){ if(r.b>m) m=r.b; }
+  const es=endeksSon(); if(es) m=Math.max(m, Math.floor(es.t)-1);
   return m;
 }
 
@@ -576,18 +615,54 @@ function donemTahmin(a,b){
 }
 
 /* ======================= Takvim yılı ======================= */
+// Yıllık limitin sayıldığı aralık. 'fatura' (varsayılan): o yıl içinde okunan faturaların kapsadığı günler
+// (ör. 17 Ara 2025 – ~17 Ara 2026); 'takvim': 1 Ocak – 31 Aralık.
+function limitPencere(yil){
+  if(ayarlar.limitYontem==='takvim') return {a:d2n(`${yil}-01-01`), b:d2n(`${yil}-12-31`), tip:'takvim'};
+  const ends=[...Object.values(faturalar).filter(f=>f.sonTarih).map(f=>d2n(f.sonTarih)), ...gelecekDonemler(18).map(q=>q.b)];
+  const yilin=y=>ends.filter(n=>n2d(n).slice(0,4)===String(y));
+  const bY=Math.max(...yilin(yil)), bP=Math.max(...yilin(yil-1));
+  return {a: isFinite(bP)? bP+1 : d2n(`${yil}-01-01`), b: isFinite(bY)? bY : d2n(`${yil}-12-31`), tip:'fatura'};
+}
 function yilOzet(yil){
-  const a=d2n(`${yil}-01-01`), b=d2n(`${yil}-12-31`);
   const sb = sonBilinenGun();
-  let gercek=0, plan=0, aylar=[], yokGun=0, yokKwh=0;
+  // grafik: takvim ayları
+  const aylar=[];
   for(let m=0;m<12;m++){ aylar.push({ym:`${yil}-${String(m+1).padStart(2,'0')}`, g:0, p:0, gGun:0, pGun:0}); }
-  for(let d=a; d<=b; d++){
+  for(let d=d2n(`${yil}-01-01`); d<=d2n(`${yil}-12-31`); d++){
     const mi = +n2d(d).slice(5,7)-1; const act=actualDay(d);
-    if (act!==null){ gercek+=act; aylar[mi].g+=act; aylar[mi].gGun++; }
-    else { const pl=planDay(d); plan+=pl; aylar[mi].p+=pl; aylar[mi].pGun++; const yk=yoklukGunu(d); if(yk!==null){ yokGun++; yokKwh+=yk; } }
+    if (act!==null){ aylar[mi].g+=act; aylar[mi].gGun++; } else { const pl=planDay(d); aylar[mi].p+=pl; aylar[mi].pGun++; }
   }
-  const kalanGun = Math.max(0, b - Math.max(sb, a-1));
-  return {gercek, plan, toplam:gercek+plan, aylar, sonBilinen:sb, kalanGun, yokGun, yokKwh};
+  // limit: seçilen pencere
+  const w = limitPencere(yil);
+  let gercek=0, plan=0, yokGun=0, yokKwh=0, planBas, sonEtiket=null;
+  const es=endeksSon(), eA=endeksAt(w.a);
+  if(eA!==null && es && es.t>w.a){
+    const tEnd=Math.min(es.t, w.b+1);
+    gercek = endeksAt(tEnd)-eA;
+    planBas = Math.ceil(tEnd);
+    if(planBas>tEnd && planBas-1<=w.b) plan += (planBas-tEnd)*planDay(planBas-1);
+    sonEtiket = tEnd<w.b+1 ? (es.k==='okuma'? `sayaç ${trDate(es.tarih)} ${es.saat}` : 'fatura '+trDate(n2d(Math.floor(es.t)-1))) : null;
+  } else {
+    planBas = w.a;
+    for(; planBas<=w.b; planBas++){ const act=actualDay(planBas); if(act===null) break; gercek+=act; }
+    if(planBas>w.a) sonEtiket = trDate(n2d(planBas-1));
+  }
+  for(let d=planBas; d<=w.b; d++){
+    const act=actualDay(d);
+    if(act!==null){ gercek+=act; continue; }
+    plan+=planDay(d); const yk=yoklukGunu(d); if(yk!==null){ yokGun++; yokKwh+=yk; }
+  }
+  const kalanGun = Math.max(0, w.b - planBas + 1);
+  return {gercek, plan, toplam:gercek+plan, aylar, sonBilinen:sb, sonEtiket, kalanGun, yokGun, yokKwh, w};
+}
+// Son iki sayaç okuması arasındaki günlük ortalama (en az biri elle okunmuş olmalı)
+function endeksGidisat(){
+  const E=_endeks; if(E.length<2) return null;
+  const b=E[E.length-1]; if(b.k!=='okuma') return null;
+  let a=null; for(let i=E.length-2;i>=0;i--){ if(b.t-E[i].t>=2){ a=E[i]; break; } }
+  if(!a) return null;
+  return {gunluk:(b.e-a.e)/(b.t-a.t), a, b, gun:b.t-a.t};
 }
 
 /* ======================= Tahmin anlık görüntüleri ======================= */
@@ -619,14 +694,14 @@ function renderOzet(){
   if (!sel.options.length){ for(const y of [ty-1,ty,ty+1]){ const o=document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);} sel.value=ty; }
   const yil = +sel.value;
   const o = yilOzet(yil);
-  $('yil-badge').textContent = `${yil} takvim yılı`;
+  $('yil-badge').textContent = o.w.tip==='takvim' ? `${yil} takvim yılı` : `${yil} · fatura dönemleri ${trDate(n2d(o.w.a))} – ${trDate(n2d(o.w.b))}`;
   const kalan = p.limit - o.gercek;
   const evGun = o.kalanGun - o.yokGun;  // evde geçecek kalan günler
   const gunluk = evGun>0 ? (kalan - o.yokKwh)/evGun : NaN;
   const planGunOrt = evGun>0 ? (o.plan - o.yokKwh)/evGun : NaN;
   const asim = o.toplam - p.limit;
   $('limit-tiles').innerHTML = `
-    <div class="tile hi"><div class="lbl">Gerçekleşen</div><div class="val">${fmt0(o.gercek)} kWh</div><div class="sub">${o.sonBilinen>=d2n(yil+'-01-01')? 'son veri: '+trDate(n2d(Math.min(o.sonBilinen,d2n(yil+'-12-31')))) : 'henüz veri yok'}</div></div>
+    <div class="tile hi"><div class="lbl">Gerçekleşen</div><div class="val">${fmt0(o.gercek)} kWh</div><div class="sub">${o.sonEtiket? 'son veri: '+o.sonEtiket : (o.gercek>0? 'dönem tamamlandı' : 'henüz veri yok')}</div></div>
     <div class="tile ${asim>0?'bad':'good'}"><div class="lbl">Yıl sonu tahmini</div><div class="val">${fmt0(o.toplam)} kWh</div><div class="sub">${asim>0? fmt0(asim)+' kWh limit üstü' : fmt0(-asim)+' kWh limit altı'}</div></div>
     <div class="tile ${kalan<0?'bad':''}"><div class="lbl">Limite kalan</div><div class="val">${fmt0(kalan)} kWh</div><div class="sub">${o.kalanGun} gün kaldı${o.yokGun? ` · ${o.yokGun} gün evde yok`:''}</div></div>
     <div class="tile ${gunluk<planGunOrt?'warn':'good'}"><div class="lbl">Limit için günlük en fazla${o.yokGun?' (evdeyken)':''}</div><div class="val">${o.kalanGun>0? fmt(Math.max(0,gunluk),1)+' kWh' : '—'}</div><div class="sub">planınız: ${o.kalanGun>0? fmt(planGunOrt,1)+' kWh/gün':'—'}</div></div>`;
@@ -637,6 +712,12 @@ function renderOzet(){
         ? `⚠️ Mevcut cihaz planıyla yılı <b>${fmt0(o.toplam)} kWh</b> ile kapatıyorsunuz. ${fmt0(p.limit)} kWh altında kalmak için evde geçecek ${evGun} günde ortalama <b>${fmt(Math.max(0,gunluk),1)} kWh/gün</b> kullanmalısınız (plan: ${fmt(planGunOrt,1)}). Cihazlar sekmesinde en çok tüketenleri görebilirsiniz.`
         : `✅ Mevcut planla ${fmt0(p.limit)} kWh limitinin altında kalıyorsunuz.`)
     : (o.toplam>p.limit? `Bu yıl ${fmt0(p.limit)} kWh limiti aşıldı; sonraki yıl son kaynak tarifesi devam eder.`:`Bu yıl limit altında kalındı.`);
+  const gd = yil===ty ? endeksGidisat() : null;
+  if(gd){
+    const hedef = Math.max(0,gunluk); const iyi = gd.gunluk <= hedef;
+    $('limit-note').innerHTML += `<br>📟 Son sayaç okuması <b>${fmt(gd.b.e,1)}</b> (${trDate(gd.b.tarih)} ${gd.b.saat}). ${gd.a.k==='okuma'? 'Önceki okumadan' : 'Son faturadan'} bu yana (${fmt(gd.gun,1)} gün) günlük ortalama <b>${fmt(gd.gunluk,1)} kWh</b> — evdeyken hedef <b>${fmt(hedef,1)} kWh</b>: ${iyi? '✅ yolunda' : '⚠️ hedefin üstünde'}. Bu hızla devam ederseniz dönem sonu ≈ <b>${fmt0(o.gercek + gd.gunluk*Math.max(0,evGun) + o.yokKwh)} kWh</b>.`;
+  }
+  renderEndeksListe();
 
   // Fiyat durumu
   const sf = sonFatura();
@@ -944,7 +1025,7 @@ function xmlFatura(t){
 function renderAyarlar(){
   const set=(id,v,mul=1)=>{ $(id).value = (typeof v==='number')? +(v*mul).toFixed(6) : ''; };
   set('s-dag',ayarlar.dag); set('s-taban',ayarlar.taban); set('s-k',ayarlar.K); set('s-kal',ayarlar.kal);
-  $('s-limit').value = ayarlar.limit ?? 4000; $('s-etv').value = +(P().etv*100).toFixed(2); $('s-kdv').value = +(P().kdv*100).toFixed(2);
+  $('s-limit').value = ayarlar.limit ?? 4000; $('s-limityontem').value = ayarlar.limitYontem==='takvim'?'takvim':'fatura'; $('s-etv').value = +(P().etv*100).toFixed(2); $('s-kdv').value = +(P().kdv*100).toFixed(2);
   $('kal-info').textContent = `Otomatik kalibrasyon: ×${fmt(kalibrasyonOto(),3)} · kullanılan dağıtım: ${fmt(P().dag,4)} · taban: ${fmt(P().taban,4)}`;
   // PTF/YEKDEM tablosu: geçen yıl başı → gelecek yıl sonu
   const y=new Date().getFullYear(); let rows='';
@@ -961,6 +1042,24 @@ function renderAyarlar(){
   const ks=Object.keys(sayac).sort().reverse();
   $('sayac-tablo').innerHTML=`<table><thead><tr><th>Ay</th><th>kWh</th><th></th></tr></thead><tbody>${ks.map(k=>{ const sv=sayacOku(k); return `<tr><td>${donemLabel(k)}${sv&&sv.kismi?` <span class="hint">(1–${+sv.bitis.slice(8,10)} arası)</span>`:''}</td><td>${fmt(sv?sv.kwh:NaN)}${sv&&sv.kismi?` <span class="hint">· ${fmt(sv.kwh/sv.gun,1)}/gün</span>`:''}</td><td><button class="icon-btn" onclick="sayacSil('${k}')">🗑️</button></td></tr>`;}).join('')}</tbody></table>`;
 }
+function renderEndeksListe(){
+  const y=ayarlar.endeksler||{}; const ks=Object.keys(y).sort((a,b)=>((y[a].tarih+y[a].saat)<(y[b].tarih+y[b].saat)?1:-1));
+  const fmtT=r=>d2n(r.tarih)+((+String(r.saat||'12:00').split(':')[0]||0)*60+(+String(r.saat||'').split(':')[1]||0))/1440;
+  $('en-liste').innerHTML = ks.length? `<table><thead><tr><th>Tarih</th><th>Endeks</th><th>Önceki okumadan bu yana</th><th></th></tr></thead><tbody>${ks.map((k,i)=>{ const r=y[k];
+    const t=fmtT(r); const onceki=_endeks.filter(q=>q.t<t-0.01).pop();
+    const ara = onceki? `${fmt(r.endeks-onceki.e,1)} kWh · ${fmt((r.endeks-onceki.e)/(t-onceki.t),1)} kWh/gün${onceki.k==='fatura'?' (faturadan)':''}` : '—';
+    return `<tr><td>${trDate(r.tarih)} ${esc(r.saat||'')}</td><td><b>${fmt(+r.endeks,1)}</b></td><td>${ara}</td><td><button class="icon-btn" onclick="endeksSil('${k}')">🗑️</button></td></tr>`; }).join('')}</tbody></table>` : '<p class="hint">Henüz okuma yok.</p>';
+}
+window.endeksSil = k=>{ if(confirm('Bu sayaç okuması silinsin mi?')) db.ref(`${ROOT}/ayarlar/endeksler/${k}`).remove(); };
+$('en-save').addEventListener('click',()=>{
+  const tarih=$('en-tarih').value, saat=$('en-saat').value||'12:00', endeks=(v=>{ v=String(v||'').trim(); if(v.includes(',')) v=v.replace(/\./g,'').replace(',','.'); return parseFloat(v)||0; })($('en-deger').value);
+  if(!tarih || !(endeks>0)){ toast('Tarih ve endeks girin.',true); return; }
+  const es=endeksSon(); const t=d2n(tarih)+(+saat.split(':')[0]*60+ +saat.split(':')[1])/1440;
+  if(es && t>es.t && endeks<es.e){ toast(`Endeks bir önceki değerden (${fmt(es.e,1)}) küçük olamaz.`,true); return; }
+  db.ref(`${ROOT}/ayarlar/endeksler`).push().set({tarih,saat,endeks}).then(()=>{ toast('Sayaç okuması kaydedildi.'); $('en-deger').value=''; });
+});
+(function(){ const d=new Date(); $('en-tarih').value=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())).toISOString().slice(0,10);
+  $('en-saat').value=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); })();
 function renderYokluk(){
   const y=ayarlar.yokluk||{}; const ks=Object.keys(y).sort((a,b)=>(y[a].bas<y[b].bas?-1:1));
   $('yk-liste').innerHTML = ks.length? `<table><thead><tr><th>Dönem</th><th>Gün</th><th>kWh/gün</th><th>Toplam</th><th></th></tr></thead><tbody>${ks.map(k=>{ const r=y[k]; const g=d2n(r.bit)-d2n(r.bas)+1;
@@ -985,7 +1084,7 @@ $('sy-save').addEventListener('click',()=>{
   $('sy-ay').value=iso.slice(0,7); $('sy-bitis').value=iso; })();
 $('s-save').addEventListener('click',()=>{
   const g=id=>{ const v=parseFloat($(id).value); return isNaN(v)? null : v; };
-  const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limit:g('s-limit')??4000,
+  const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limit:g('s-limit')??4000, limitYontem:$('s-limityontem').value,
     etv: g('s-etv')!==null? g('s-etv')/100 : null, kdv: g('s-kdv')!==null? g('s-kdv')/100 : null };
   db.ref(`${ROOT}/ayarlar`).update(upd).then(()=>toast('Ayarlar kaydedildi.'));
 });
@@ -1139,6 +1238,11 @@ function guncellemeUygula(){
     const yapilan = ay.uygulananGuncelleme || {};
     for(const op of j.islemler){
       if(!op.id || yapilan[op.id]) continue;
+      if(op.tip==='endeks'){
+        const y = ay.endeksler || {};
+        if(!Object.values(y).some(r=>r && r.tarih===op.tarih && r.saat===op.saat))
+          await db.ref(`${ROOT}/ayarlar/endeksler`).push().set({tarih:op.tarih, saat:op.saat, endeks:+op.endeks});
+      }
       if(op.tip==='yokluk'){
         const y = ay.yokluk || {};
         const k = Object.keys(y).find(k=>y[k] && y[k].bas===op.bas);
