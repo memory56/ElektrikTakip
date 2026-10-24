@@ -1148,6 +1148,8 @@ function prizEsle(id, key){
   const upd={};
   for(const [k,c] of Object.entries(cihazlar)) if(c.priz===id && k!==key){ upd[`${k}/priz`]=null; upd[`${k}/prizTarih`]=null; }
   // eşleştirme günü kaydedilir: priz başka bir cihazdan taşındıysa eski ölçümler yeni cihaza sayılmaz
+  // saat/gün modundan kWh/gün'e geçerken eski ay değerlerini kWh'ye çevir
+  if(key && cihazlar[key] && cihazlar[key].mod!=='kwh' && Array.isArray(cihazlar[key].aylik)){ const g=+cihazlar[key].guc||0; upd[`${key}/aylik`]=cihazlar[key].aylik.map(v=>Math.round((+v||0)*g/1000*100)/100); }
   if(key){ Object.assign(upd,{[`${key}/priz`]:id, [`${key}/prizTarih`]:n2d(todayN()), [`${key}/mod`]:'kwh', [`${key}/adet`]:1, [`${key}/gh`]:7, [`${key}/kaynak`]:'olculen'}); }
   db.ref(`${ROOT}/cihazlar`).update(upd).then(()=>{ toast(key? `${cihazlar[key].ad} prizle eşleştirildi.` : 'Eşleştirme kaldırıldı.'); setTimeout(olcumUygula,300); });
 }
@@ -1157,9 +1159,13 @@ function olcumUygula(){
     const r = c.priz && olcum.cihazlar[c.priz]; if(!r || !r.gunluk) continue;
     const ay={}; for(const [g,v] of Object.entries(r.gunluk)){ if(c.prizTarih && g < c.prizTarih) continue; const ym=g.slice(0,7); (ay[ym]=ay[ym]||[]).push(v); }
     const yeni = (c.aylik||Array(12).fill(0)).slice(); let degisti=false;
+    let sonOrt=null, sonMi=-1; const buYil=String(new Date().getFullYear());
     for(const ym of Object.keys(ay).sort()){ const a=ay[ym]; if(a.length<3) continue;
       const ort=Math.round(a.reduce((x,y)=>x+y,0)/a.length*100)/100; const mi=+ym.slice(5,7)-1;
-      if(Math.abs((+yeni[mi]||0)-ort)>0.005){ yeni[mi]=ort; degisti=true; } }
+      if(Math.abs((+yeni[mi]||0)-ort)>0.005){ yeni[mi]=ort; degisti=true; }
+      if(ym.slice(0,4)===buYil){ sonOrt=ort; sonMi=mi; } }
+    // henüz ölçülmemiş gelecek aylar: son ölçülen ayın ortalaması
+    if(sonOrt!==null) for(let mi=sonMi+1; mi<12; mi++){ if(Math.abs((+yeni[mi]||0)-sonOrt)>0.005){ yeni[mi]=sonOrt; degisti=true; } }
     if(degisti) db.ref(`${ROOT}/cihazlar/${k}/aylik`).set(yeni);
     // Güç (W): prizden ölçülen "çalışırken" gücü
     // (priz son 7 gün içinde başka cihazda kullanıldıysa o ölçüm karışık olur; o kayıtlar düşene kadar beklenir)
