@@ -16,7 +16,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1763,
@@ -42,7 +42,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 2148,
@@ -64,12 +64,19 @@
     "2026-10-22": 0.013,
     "2026-10-23": 0.0
    },
-   "ad": "5 - Arıtma",
+   "ad": "5 - Elektrikli Ocak",
    "kategori": "cz",
-   "online": false,
+   "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
-   "yontem": "add_ele"
+   "anlikZaman": "2026-10-24 20:33",
+   "yontem": "add_ele",
+   "guc": {
+    "calismaW": 1300,
+    "maksW": 1310,
+    "beklemeW": 0.0,
+    "kayit": 12,
+    "tarih": "2026-10-24"
+   }
   },
   "608610038caab5dfba47": {
    "gunluk": {
@@ -87,7 +94,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1856,
@@ -112,14 +119,14 @@
    "ad": "7- Veranda TV",
    "kategori": "cz",
    "online": true,
-   "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikW": 92.5,
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
     "maksW": 99,
-    "beklemeW": 8.3,
-    "kayit": 51,
+    "beklemeW": 0.0,
+    "kayit": 57,
     "tarih": "2026-10-24"
    }
   },
@@ -138,14 +145,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 3.7,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikW": 134.0,
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 594,
-    "maksW": 753,
+    "maksW": 760,
     "beklemeW": 9.4,
-    "kayit": 49,
+    "kayit": 55,
     "tarih": "2026-10-24"
    }
   },
@@ -165,13 +172,13 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 1724,
+    "calismaW": 1717,
     "maksW": 1772,
     "beklemeW": 0.0,
-    "kayit": 13,
+    "kayit": 16,
     "tarih": "2026-10-24"
    }
   },
@@ -187,8 +194,8 @@
    "ad": "8-LG TV",
    "kategori": "cz",
    "online": true,
-   "anlikW": 8.9,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikW": 7.7,
+   "anlikZaman": "2026-10-24 20:33",
    "guc": {
     "calismaW": 100,
     "maksW": 200,
@@ -210,13 +217,13 @@
    "ad": "9-Dondurucu",
    "kategori": "cz",
    "online": true,
-   "anlikW": 73.7,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikW": 73.8,
+   "anlikZaman": "2026-10-24 20:33",
    "guc": {
     "calismaW": 74,
     "maksW": 77,
     "beklemeW": 0.0,
-    "kayit": 279,
+    "kayit": 292,
     "tarih": "2026-10-24"
    },
    "yontem": "add_ele"
@@ -230,13 +237,13 @@
     "2026-10-22": 0.01,
     "2026-10-23": 0.011
    },
-   "ad": "10-Sebil",
+   "ad": "10-Elektrikli Battaniye Salon",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-24 15:54",
+   "anlikZaman": "2026-10-24 20:33",
    "yontem": "add_ele"
   }
  },
- "guncelleme": "2026-10-24 15:54"
+ "guncelleme": "2026-10-24 20:33"
 }
