@@ -17,7 +17,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1765,
@@ -43,8 +43,8 @@
    "ad": "1 - Çamaşır MAK",
    "kategori": "cz",
    "online": true,
-   "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikW": 84.5,
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 2148,
@@ -71,7 +71,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1300,
@@ -98,7 +98,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1856,
@@ -124,14 +124,14 @@
    "ad": "7- Veranda TV",
    "kategori": "cz",
    "online": true,
-   "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikW": 92.4,
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
     "maksW": 99,
     "beklemeW": 0.0,
-    "kayit": 59,
+    "kayit": 60,
     "tarih": "2026-10-25"
    }
   },
@@ -151,14 +151,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 95.2,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikW": 108.7,
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 594,
     "maksW": 760,
     "beklemeW": 9.4,
-    "kayit": 59,
+    "kayit": 70,
     "tarih": "2026-10-25"
    }
   },
@@ -179,13 +179,13 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 1717,
+    "calismaW": 1711,
     "maksW": 1772,
     "beklemeW": 0.0,
-    "kayit": 16,
+    "kayit": 17,
     "tarih": "2026-10-25"
    }
   },
@@ -202,8 +202,8 @@
    "ad": "8-LG TV",
    "kategori": "cz",
    "online": true,
-   "anlikW": 7.9,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikW": 6.2,
+   "anlikZaman": "2026-10-25 10:47",
    "guc": {
     "calismaW": 104,
     "maksW": 200,
@@ -227,12 +227,12 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "guc": {
     "calismaW": 74,
     "maksW": 77,
     "beklemeW": 0.0,
-    "kayit": 306,
+    "kayit": 329,
     "tarih": "2026-10-25"
    },
    "yontem": "add_ele"
@@ -251,9 +251,9 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 01:42",
+   "anlikZaman": "2026-10-25 10:47",
    "yontem": "add_ele"
   }
  },
- "guncelleme": "2026-10-25 01:42"
+ "guncelleme": "2026-10-25 10:47"
 }
