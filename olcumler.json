@@ -17,7 +17,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1765,
@@ -44,13 +44,13 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 2148,
     "maksW": 2163,
-    "beklemeW": 69.3,
-    "kayit": 7,
+    "beklemeW": 66.4,
+    "kayit": 8,
     "tarih": "2026-10-25"
    }
   },
@@ -71,7 +71,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1300,
@@ -98,12 +98,12 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1856,
     "maksW": 1877,
-    "beklemeW": 27.1,
+    "beklemeW": 27.2,
     "kayit": 8,
     "tarih": "2026-10-25"
    }
@@ -125,7 +125,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
@@ -151,14 +151,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 91.8,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikW": 106.4,
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 594,
     "maksW": 760,
     "beklemeW": 9.4,
-    "kayit": 75,
+    "kayit": 79,
     "tarih": "2026-10-25"
    }
   },
@@ -179,13 +179,13 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1711,
     "maksW": 1772,
     "beklemeW": 0.0,
-    "kayit": 17,
+    "kayit": 18,
     "tarih": "2026-10-25"
    }
   },
@@ -202,8 +202,8 @@
    "ad": "8-LG TV",
    "kategori": "cz",
    "online": true,
-   "anlikW": 8.4,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikW": 86.1,
+   "anlikZaman": "2026-10-25 20:49",
    "guc": {
     "calismaW": 104,
     "maksW": 200,
@@ -226,13 +226,13 @@
    "ad": "9-Dondurucu",
    "kategori": "cz",
    "online": true,
-   "anlikW": 73.1,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikW": 74.6,
+   "anlikZaman": "2026-10-25 20:49",
    "guc": {
     "calismaW": 73,
     "maksW": 77,
     "beklemeW": 0.0,
-    "kayit": 344,
+    "kayit": 356,
     "tarih": "2026-10-25"
    },
    "yontem": "add_ele"
@@ -251,9 +251,9 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-25 16:20",
+   "anlikZaman": "2026-10-25 20:49",
    "yontem": "add_ele"
   }
  },
- "guncelleme": "2026-10-25 16:20"
+ "guncelleme": "2026-10-25 20:49"
 }
