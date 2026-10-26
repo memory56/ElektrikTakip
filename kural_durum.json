@@ -3,9 +3,10 @@
   "gun": "2026-10-26",
   "ad": "Termosifon",
   "limit": 1.5,
-  "bugunKwh": 0.0,
+  "bugunKwh": 2.83,
   "acik": false,
-  "kontrol": "2026-10-26 00:28"
+  "kontrol": "2026-10-26 16:31",
+  "kapatildi": "16:31"
  },
- "guncelleme": "2026-10-26 00:28"
+ "guncelleme": "2026-10-26 16:31"
 }
