@@ -1184,7 +1184,25 @@ $('yil-sec').addEventListener('change', renderOzet);
 window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
 
 let _renderT=null;
-function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{ buildInvIndex(); hesaplaTrend(); renderOzet(); renderCihazOzet(); { const ae=document.activeElement; const yaziyor = ae && $('dev-body').contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT'); if(!yaziyor) renderCihazTablo(); } renderFaturalar(); renderAyarlar(); renderYokluk(); formOnDoldur(); renderPrizler(); olcumUygula(); },60); }
+let _sonHata='';
+function hataGoster(yer, e){
+  const msg = `${yer}: ${e && e.message || e}` + (e && e.stack ? ' @ ' + (String(e.stack).split('\n')[1]||'').trim().slice(0,120) : '');
+  console.error(yer, e); if(msg===_sonHata) return; _sonHata=msg;
+  let el=$('hata-kutu'); if(!el){ el=document.createElement('div'); el.id='hata-kutu';
+    el.style.cssText='position:fixed;left:8px;right:8px;bottom:8px;z-index:9999;background:#5b1a1a;color:#fff;padding:8px 12px;border-radius:8px;font-size:.78rem;white-space:pre-wrap';
+    el.onclick=()=>el.remove(); document.body.appendChild(el); }
+  el.textContent='⚠️ Hata (ekran görüntüsünü gönderin, kapatmak için dokunun)\n'+msg;
+}
+window.addEventListener('error', ev=>hataGoster('genel', ev.error||ev.message));
+window.addEventListener('unhandledrejection', ev=>hataGoster('işlem', ev.reason));
+function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{
+    // her bölüm ayrı çalışır: birinde hata olursa diğerleri yine güncellenir, hata ekranda gösterilir
+    const adim=(ad,f)=>{ try{ f(); }catch(e){ hataGoster(ad, e); } };
+    adim('veri', ()=>{ buildInvIndex(); hesaplaTrend(); });
+    adim('Özet', renderOzet); adim('Cihaz özeti', renderCihazOzet);
+    adim('Cihaz tablosu', ()=>{ const ae=document.activeElement; const yaziyor = ae && $('dev-body').contains(ae) && (ae.tagName==='INPUT'||ae.tagName==='SELECT'); if(!yaziyor) renderCihazTablo(); });
+    adim('Faturalar', renderFaturalar); adim('Ayarlar', renderAyarlar); adim('Yokluk', renderYokluk); adim('Form', formOnDoldur);
+    adim('Prizler', renderPrizler); adim('Ölçüm', olcumUygula); },60); }
 
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
