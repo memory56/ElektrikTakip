@@ -1207,19 +1207,23 @@ function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
 
+function yetkiHatasi(e){
+  hataGoster('Veritabanı', {message: (e&&e.code==='PERMISSION_DENIED'||/permission/i.test(e&&e.message||''))
+    ? 'Okuma izni yok (PERMISSION_DENIED). Firebase kurallarında "elektrik" bölümüne bu Google hesabı için izin verilmeli.' : (e&&e.message||e)});
+}
 function initData(){
   const r = db.ref(ROOT);
   r.child('cihazlar').on('value', s=>{ cihazlar=s.val()||{}; loaded.cihaz=true;
     if(!s.exists()) { const u={}; SEED_CIHAZLAR.forEach((c,i)=>{ u[r.child('cihazlar').push().key]={...c,sira:i}; }); r.child('cihazlar').set(u); }
-    renderAll(); });
+    renderAll(); }, yetkiHatasi);
   r.child('faturalar').on('value', s=>{ faturalar=s.val()||{}; loaded.fatura=true;
     if(!s.exists()){ const u={}; for(const a of SEED_FATURALAR){ u[a[0]]={donem:a[0],ilkTarih:a[1],sonTarih:a[2],ilkEndeks:a[3],sonEndeks:a[4],kwh:a[5],
         enerjiBF:a[6]!==null? +((a[11]/1.1-a[8]-a[9])/a[5]).toFixed(6) : null, dagitimBF:a[7], dagitimTL:a[8], etv:a[9], kdv:a[10], faturaTutar:a[11], odenecek:a[12], kaynak:'xml'}; }
       r.child('faturalar').set(u); }
-    renderAll(); });
-  r.child('sayac').on('value', s=>{ sayac=s.val()||{}; loaded.sayac=true; if(!s.exists()) r.child('sayac').set(SEED_SAYAC); renderAll(); });
-  r.child('ayarlar').on('value', s=>{ ayarlar=s.val()||{}; loaded.ayar=true; renderAll(); });
-  r.child('tahminler').on('value', s=>{ tahminler=s.val()||{}; loaded.tahmin=true; renderAll(); });
+    renderAll(); }, yetkiHatasi);
+  r.child('sayac').on('value', s=>{ sayac=s.val()||{}; loaded.sayac=true; if(!s.exists()) r.child('sayac').set(SEED_SAYAC); renderAll(); }, yetkiHatasi);
+  r.child('ayarlar').on('value', s=>{ ayarlar=s.val()||{}; loaded.ayar=true; renderAll(); }, yetkiHatasi);
+  r.child('tahminler').on('value', s=>{ tahminler=s.val()||{}; loaded.tahmin=true; renderAll(); }, yetkiHatasi);
 }
 
 /* ======================= Auth (Su Faturası ile aynı) ======================= */
