@@ -239,7 +239,8 @@
   <section class="page" id="p-cihaz">
     <div class="card">
       <h2>Ay seçin → cihaz bazında tüketim
-        <select id="ay-sec" style="width:auto;margin-left:auto;padding:5px 8px;font-size:.82rem"></select></h2>
+        <select id="sira-sec" title="Sıralama" style="width:auto;margin-left:auto;padding:5px 8px;font-size:.82rem"><option value="tuketim">En çok tüketen üstte</option><option value="plan">Kendi sıram</option></select>
+        <select id="ay-sec" style="width:auto;margin-left:6px;padding:5px 8px;font-size:.82rem"></select></h2>
       <div class="tiles" id="cihaz-tiles"></div>
       <div class="bars" id="cihaz-bars" style="margin-top:12px"></div>
       <div class="legend"><span><i style="background:var(--s-actual)"></i>Akıllı prizle ölçülen</span><span><i style="background:var(--s-plan)"></i>Tahmini değer</span></div>
@@ -862,7 +863,10 @@ function renderCihazTablo(){
   const mi = seciliAy();
   $('dev-head').innerHTML = `<tr><th class="sticky">Cihaz</th><th>Ölçüm</th><th>Güç (W)</th><th>Adet</th><th>Gün/hafta</th><th>Kaynak</th><th>Ay değerleri</th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}">${a}</th>`).join('')}<th>${AYLAR[mi]} kWh/ay</th><th></th></tr>
     <tr class="tot"><th class="sticky lbl">Aylık toplam (kWh)<div style="font-weight:500;font-size:.68rem">altında: günlük ortalama</div></th><th colspan="6" class="lbl" data-tm="yil"></th>${AYLAR.map((a,i)=>`<th class="${hucreSinif(i,mi)}" data-tm="${i}"></th>`).join('')}<th data-tm="sec"></th><th></th></tr>`;
-  const keys = Object.keys(cihazlar).sort((a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0));
+  const sirala = $('sira-sec').value==='tuketim'
+    ? (a,b)=>(cihazGunluk(cihazlar[b],mi)-cihazGunluk(cihazlar[a],mi)) || ((cihazlar[a].sira??0)-(cihazlar[b].sira??0))
+    : (a,b)=>(cihazlar[a].sira??0)-(cihazlar[b].sira??0);
+  const keys = Object.keys(cihazlar).sort(sirala);
   $('dev-body').innerHTML = keys.map(k=>{ const c=cihazlar[k];
     return `<tr data-k="${k}"><td class="sticky"><input type="text" class="name" data-f="ad" value="${esc(c.ad)}"></td>
       <td><select data-f="mod"><option value="saat" ${c.mod!=='kwh'?'selected':''}>W × saat</option><option value="kwh" ${c.mod==='kwh'?'selected':''}>kWh/gün</option></select></td>
@@ -1181,6 +1185,11 @@ function showPage(p){ setTimeout(()=>{ if(p==='cihaz') floatKur(); else floatGun
 document.querySelectorAll('nav.tabs button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.p)));
 (function(){ const s=$('ay-sec'); AYLAR_UZUN.forEach((a,i)=>{const o=document.createElement('option'); o.value=i; o.textContent=a; s.appendChild(o);}); s.value=new Date().getMonth(); s.addEventListener('change',()=>{renderCihazTablo(); renderCihazOzet();}); })();
 $('yil-sec').addEventListener('change', renderOzet);
+(function(){ const ss=$('sira-sec'); try{ const v=localStorage.getItem('elektrikTakip.sira'); if(v) ss.value=v; }catch(e){}
+  ss.addEventListener('change',()=>{ try{ localStorage.setItem('elektrikTakip.sira', ss.value); }catch(e){} renderCihazTablo(); });
+  // değer girişi bitince (kutudan çıkınca) sıralamayı tazele
+  $('dev-body').addEventListener('focusout',()=>{ setTimeout(()=>{ const ae=document.activeElement; if(!(ae && $('dev-body').contains(ae))) renderCihazTablo(); },300); });
+})();
 window.addEventListener('resize', ()=>{ clearTimeout(window._rz); window._rz=setTimeout(renderOzet,200); });
 
 let _renderT=null;
