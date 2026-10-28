@@ -1,0 +1,40 @@
+name: Priz geçmişi (teşhis)
+
+on:
+  workflow_dispatch:
+    inputs:
+      priz_id:
+        description: "Tuya cihaz kimliği"
+        default: "608610038caab5d7cb7e"
+      saat:
+        description: "Kaç saat geriye"
+        default: "36"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repo-yazma
+  cancel-in-progress: false
+
+jobs:
+  gecmis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kayıtları oku
+        env:
+          TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
+          TUYA_ACCESS_SECRET: ${{ secrets.TUYA_ACCESS_SECRET }}
+          TUYA_REGION: ${{ secrets.TUYA_REGION }}
+          PRIZ_ID: ${{ inputs.priz_id }}
+          SAAT: ${{ inputs.saat }}
+        run: python3 scripts/priz_gecmis.py
+      - name: Kaydet
+        run: |
+          git add priz_gecmis.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "teshis-botu"
+          git config user.email "actions@users.noreply.github.com"
+          git commit -q -m "Priz geçmişi ($(date +%H:%M))"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
