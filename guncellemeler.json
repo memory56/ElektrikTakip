@@ -41,6 +41,22 @@
    "bit": "2026-12-31",
    "kwh": 2.0,
    "mesaj": "25–31 Ara yokluk tüketimi 2,0 kWh/gün olarak güncellendi"
+  },
+  {
+   "id": "2026-10-29b-yokluk-kasim",
+   "tip": "yokluk",
+   "bas": "2026-10-30",
+   "bit": "2026-11-09",
+   "kwh": 2.2,
+   "mesaj": "Yokluk dönemi: 30 Eki – 9 Kas, 2,2 kWh/gün (modem dahil)"
+  },
+  {
+   "id": "2026-10-29b-yokluk-aralik",
+   "tip": "yokluk",
+   "bas": "2026-12-25",
+   "bit": "2026-12-31",
+   "kwh": 2.2,
+   "mesaj": "25–31 Ara: 2,2 kWh/gün (modem dahil)"
   }
  ]
 }
