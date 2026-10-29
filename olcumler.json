@@ -21,7 +21,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1777,
@@ -52,7 +52,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 2148,
@@ -83,7 +83,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1300,
@@ -114,7 +114,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1853,
@@ -145,7 +145,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 94.7,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
@@ -175,14 +175,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 3.7,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikW": 93.2,
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 594,
+    "calismaW": 595,
     "maksW": 760,
     "beklemeW": 9.3,
-    "kayit": 169,
+    "kayit": 170,
     "tarih": "2026-10-29"
    }
   },
@@ -206,8 +206,8 @@
    "ad": "6 - LG Tv",
    "kategori": "cz",
    "online": true,
-   "anlikW": 7.5,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikW": 7.0,
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1664,
@@ -232,7 +232,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "guc": {
     "calismaW": 107,
     "maksW": 200,
@@ -260,7 +260,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikZaman": "2026-10-29 11:52",
    "guc": {
     "calismaW": 73,
     "maksW": 77,
@@ -287,17 +287,17 @@
    "ad": "10-Modem",
    "kategori": "cz",
    "online": true,
-   "anlikW": 11.6,
-   "anlikZaman": "2026-10-29 11:37",
+   "anlikW": 9.2,
+   "anlikZaman": "2026-10-29 11:52",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 10,
     "maksW": 12,
     "beklemeW": 0.0,
-    "kayit": 5,
+    "kayit": 6,
     "tarih": "2026-10-29"
    }
   }
  },
- "guncelleme": "2026-10-29 11:37"
+ "guncelleme": "2026-10-29 11:52"
 }
