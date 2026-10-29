@@ -335,7 +335,7 @@
         <div class="field"><label>Başlangıç</label><input type="date" id="yk-bas"></div>
         <div class="field"><label>Bitiş</label><input type="date" id="yk-bit"></div>
         <div class="field"><label>O günlerde günlük kWh</label><input type="text" inputmode="decimal" id="yk-kwh" value="1"></div>
-        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="yk-save">Ekle</button></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="yk-save">Ekle</button> <button class="btn secondary" id="yk-iptal" hidden>Vazgeç</button></div>
       </div>
       <div id="yk-liste" style="margin-top:10px"></div>
     </div>
@@ -1067,13 +1067,21 @@ $('en-save').addEventListener('click',()=>{
 function renderYokluk(){
   const y=ayarlar.yokluk||{}; const ks=Object.keys(y).sort((a,b)=>(y[a].bas<y[b].bas?-1:1));
   $('yk-liste').innerHTML = ks.length? `<table><thead><tr><th>Dönem</th><th>Gün</th><th>kWh/gün</th><th>Toplam</th><th></th></tr></thead><tbody>${ks.map(k=>{ const r=y[k]; const g=d2n(r.bit)-d2n(r.bas)+1;
-    return `<tr><td>${trDate(r.bas)} – ${trDate(r.bit)}</td><td>${g}</td><td>${fmt(+r.kwh,1)}</td><td>${fmt(g*r.kwh,1)} kWh</td><td><button class="icon-btn" onclick="yoklukSil('${k}')">🗑️</button></td></tr>`; }).join('')}</tbody></table>` : '<p class="hint">Kayıt yok.</p>';
+    return `<tr><td>${trDate(r.bas)} – ${trDate(r.bit)}</td><td>${g}</td><td>${fmt(+r.kwh,1)}</td><td>${fmt(g*r.kwh,1)} kWh</td><td style="white-space:nowrap"><button class="icon-btn" title="Düzenle" onclick="yoklukDuzenle('${k}')">✏️</button><button class="icon-btn" title="Sil" onclick="yoklukSil('${k}')">🗑️</button></td></tr>`; }).join('')}</tbody></table>` : '<p class="hint">Kayıt yok.</p>';
 }
+let _ykDuzenlenen = null;
+function ykFormSifirla(){ _ykDuzenlenen=null; $('yk-bas').value=''; $('yk-bit').value=''; $('yk-save').textContent='Ekle'; $('yk-iptal').hidden=true; }
+window.yoklukDuzenle = k=>{ const r=(ayarlar.yokluk||{})[k]; if(!r) return; _ykDuzenlenen=k;
+  $('yk-bas').value=r.bas; $('yk-bit').value=r.bit; $('yk-kwh').value=String(r.kwh).replace('.',',');
+  $('yk-save').textContent='Güncelle'; $('yk-iptal').hidden=false; $('yk-bas').scrollIntoView({block:'center',behavior:'smooth'}); };
+$('yk-iptal').addEventListener('click', ykFormSifirla);
 window.yoklukSil = k=>{ if(confirm('Bu dönem silinsin mi?')) db.ref(`${ROOT}/ayarlar/yokluk/${k}`).remove(); };
 $('yk-save').addEventListener('click',()=>{
   const bas=$('yk-bas').value, bit=$('yk-bit').value, kwh=parseFloat(String($('yk-kwh').value).replace(',','.'));
   if(!bas||!bit||bit<bas||isNaN(kwh)){ toast('Başlangıç, bitiş ve günlük kWh girin.',true); return; }
-  db.ref(`${ROOT}/ayarlar/yokluk`).push().set({bas,bit,kwh}).then(()=>{ toast('Kaydedildi.'); $('yk-bas').value=''; $('yk-bit').value=''; });
+  const ref = _ykDuzenlenen ? db.ref(`${ROOT}/ayarlar/yokluk/${_ykDuzenlenen}`) : db.ref(`${ROOT}/ayarlar/yokluk`).push();
+  const guncelleme = !!_ykDuzenlenen;
+  ref.set({bas,bit,kwh}).then(()=>{ toast(guncelleme? 'Dönem güncellendi.' : 'Kaydedildi.'); ykFormSifirla(); });
 });
 window.sayacSil = k=>{ if(confirm(donemLabel(k)+' silinsin mi?')) db.ref(`${ROOT}/sayac/${k}`).remove(); };
 $('sy-save').addEventListener('click',()=>{
@@ -1281,8 +1289,8 @@ function guncellemeUygula(){
           await db.ref(`${ROOT}/ayarlar/endeksler`).push().set({tarih:op.tarih, saat:op.saat, endeks:+op.endeks});
       }
       if(op.tip==='yokluk'){
-        const y = ay.yokluk || {};
-        const k = Object.keys(y).find(k=>y[k] && y[k].bas===op.bas);
+        const y = (await db.ref(`${ROOT}/ayarlar/yokluk`).once('value')).val() || {};
+        const k = Object.keys(y).find(k=>y[k] && (y[k].bas===op.bas || (op.eskiBas && y[k].bas===op.eskiBas)));
         const rec = {bas:op.bas, bit:op.bit, kwh:+op.kwh};
         if(k) await db.ref(`${ROOT}/ayarlar/yokluk/${k}`).set(rec); else await db.ref(`${ROOT}/ayarlar/yokluk`).push().set(rec);
       }

@@ -24,6 +24,23 @@
    "saat": "12:30",
    "endeks": 34964.7,
    "mesaj": "İlk sayaç okuması eklendi: 34.964,7 (23.10.2026 12:30)"
+  },
+  {
+   "id": "2026-10-29-yokluk-kasim",
+   "tip": "yokluk",
+   "eskiBas": "2026-10-31",
+   "bas": "2026-10-30",
+   "bit": "2026-11-09",
+   "kwh": 2.0,
+   "mesaj": "Yokluk dönemi güncellendi: 30 Eki – 9 Kas, 2,0 kWh/gün"
+  },
+  {
+   "id": "2026-10-29-yokluk-aralik",
+   "tip": "yokluk",
+   "bas": "2026-12-25",
+   "bit": "2026-12-31",
+   "kwh": 2.0,
+   "mesaj": "25–31 Ara yokluk tüketimi 2,0 kWh/gün olarak güncellendi"
   }
  ]
 }
