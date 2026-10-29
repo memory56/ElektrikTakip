@@ -1224,9 +1224,21 @@ function renderAll(){ clearTimeout(_renderT); _renderT=setTimeout(()=>{
 /* ======================= Veri bağlantısı ======================= */
 fetch('prices.json?ts='+Date.now()).then(r=>r.json()).then(j=>{ prices=j; renderAll(); }).catch(()=>{ prices=null; renderAll(); });
 
+// İzin hatası: önce oturum anahtarını (token) yenileyip bir kez daha dener. iPhone'da Safari bazen
+// eski/geçersiz anahtarla bağlanıyor; ekranda e-posta görünse de veritabanı "izin yok" diyor.
+let _yetkiDeneme=0, _yetkiT=null;
 function yetkiHatasi(e){
-  hataGoster('Veritabanı', {message: (e&&e.code==='PERMISSION_DENIED'||/permission/i.test(e&&e.message||''))
-    ? 'Okuma izni yok (PERMISSION_DENIED). Firebase kurallarında "elektrik" bölümüne bu Google hesabı için izin verilmeli.' : (e&&e.message||e)});
+  const izin = e && (e.code==='PERMISSION_DENIED' || /permission/i.test(e.message||''));
+  if(!izin){ hataGoster('Veritabanı', e); return; }
+  if(_yetkiT) return;               // 5 dinleyici aynı anda hata verir; tek sefer işle
+  _yetkiT=setTimeout(async()=>{
+    const u=auth.currentUser;
+    if(u && _yetkiDeneme<1){ _yetkiDeneme++;
+      try{ await u.getIdToken(true); db.goOffline(); db.goOnline(); _yetkiT=null; initData(); return; }catch(_){} }
+    let tokMail='?'; try{ tokMail=(await u.getIdTokenResult()).claims.email||'(yok)'; }catch(_){}
+    hataGoster('Veritabanı', {message:'Okuma izni yok (PERMISSION_DENIED). Oturumdaki hesap: '+tokMail+
+      '. Çözüm: üstteki "Çıkış yap"a basın, sonra Google ile yeniden giriş yapın.'});
+  },300);
 }
 function initData(){
   const r = db.ref(ROOT);
