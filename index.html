@@ -1288,6 +1288,26 @@ function guncellemeUygula(){
         if(!Object.values(y).some(r=>r && r.tarih===op.tarih && r.saat===op.saat))
           await db.ref(`${ROOT}/ayarlar/endeksler`).push().set({tarih:op.tarih, saat:op.saat, endeks:+op.endeks});
       }
+      if(op.tip==='eslestir' || op.tip==='eslestirmeKaldir'){
+        const cs = (await db.ref(`${ROOT}/cihazlar`).once('value')).val() || {};
+        const upd = {};
+        for(const [k,c] of Object.entries(cs)) if(c && c.priz===op.prizId){ upd[`${k}/priz`]=null; upd[`${k}/prizTarih`]=null; }
+        if(op.tip==='eslestir'){
+          const norm=x=>String(x||'').trim().toLocaleLowerCase('tr');
+          let key = Object.keys(cs).find(k=>norm(cs[k].ad)===norm(op.cihaz)) || Object.keys(cs).find(k=>norm(cs[k].ad).startsWith(norm(op.cihaz))) || Object.keys(cs).find(k=>norm(cs[k].ad).includes(norm(op.cihaz)));
+          if(!key && op.ekle){
+            key = db.ref(`${ROOT}/cihazlar`).push().key;
+            const sira = Math.max(0, ...Object.values(cs).map(c=>+c.sira||0)) + 1;
+            upd[key] = {ad:op.cihaz, mod:'kwh', adet:1, gh:7, aylik:Array(12).fill(+op.kwh||0), kaynak:'olculen', sira};
+          }
+          if(key){ const bugun=n2d(todayN());
+            if(upd[key]) Object.assign(upd[key], {priz:op.prizId, prizTarih:bugun});
+            else Object.assign(upd, {[`${key}/priz`]:op.prizId, [`${key}/prizTarih`]:bugun, [`${key}/mod`]:'kwh', [`${key}/kaynak`]:'olculen'});
+            if(!upd[key] && cs[key] && cs[key].mod!=='kwh' && Array.isArray(cs[key].aylik)){ const g=+cs[key].guc||0; upd[`${key}/aylik`]=cs[key].aylik.map(v=>Math.round((+v||0)*g/1000*100)/100); }
+          }
+        }
+        if(Object.keys(upd).length) await db.ref(`${ROOT}/cihazlar`).update(upd);
+      }
       if(op.tip==='yokluk'){
         const y = (await db.ref(`${ROOT}/ayarlar/yokluk`).once('value')).val() || {};
         const k = Object.keys(y).find(k=>y[k] && (y[k].bas===op.bas || (op.eskiBas && y[k].bas===op.eskiBas)));

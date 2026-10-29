@@ -57,6 +57,32 @@
    "bit": "2026-12-31",
    "kwh": 2.2,
    "mesaj": "25–31 Ara: 2,2 kWh/gün (modem dahil)"
+  },
+  {
+   "id": "2026-10-29-priz-modem",
+   "tip": "eslestir",
+   "prizId": "bf16bc61e3aa883c523kiq",
+   "cihaz": "Modem",
+   "ekle": true,
+   "kwh": 0.28,
+   "mesaj": "10-Modem prizi Modem ile eşleştirildi"
+  },
+  {
+   "id": "2026-10-29-priz-tv",
+   "tip": "eslestir",
+   "prizId": "bf9c6a18b5fe5c1404acsb",
+   "cihaz": "TV",
+   "mesaj": "6 - LG Tv prizi TV ile eşleştirildi"
+  },
+  {
+   "id": "2026-10-29-priz-8-kaldir",
+   "tip": "eslestirmeKaldir",
+   "prizId": "bf6675e15035ea146ee7on"
+  },
+  {
+   "id": "2026-10-29-priz-5-kaldir",
+   "tip": "eslestirmeKaldir",
+   "prizId": "bf145e8184512a154cwoq6"
   }
  ]
 }
