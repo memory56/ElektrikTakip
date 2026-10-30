@@ -20,9 +20,9 @@ jobs:
       - name: pdftotext kur
         run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
       - name: Bülteni oku, prices.json güncelle
-        # EPİAŞ sitesi ara sıra geçici olarak yanıt vermiyor: 3 deneme, aralarında 10 dk
+        # EPİAŞ sitesi ara sıra geçici olarak yanıt vermiyor: 3 deneme, aralarında 5 dk
         run: |
-          for i in 1 2 3; do python3 scripts/fiyat_guncelle.py && exit 0; [ $i -lt 3 ] && { echo "Tekrar denenecek ($i)"; sleep 600; }; done
+          for i in 1 2 3; do python3 scripts/fiyat_guncelle.py && exit 0; [ $i -lt 3 ] && { echo "Tekrar denenecek ($i)"; sleep 300; }; done
           exit 1
       - name: Değişiklik varsa kaydet
         run: |

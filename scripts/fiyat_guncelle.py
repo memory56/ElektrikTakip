@@ -103,7 +103,15 @@ def main():
         PRICES.write_text(json.dumps(prices, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"Güncellendi: {url} · {len(monthly)} aylık değer · değişti: {before != json.dumps(prices['ptf'], sort_keys=True)}")
         return 0
-    print("Son 15 günde okunabilir bülten bulunamadı", file=sys.stderr)
+    print("Son 15 günde okunabilir bülten bulunamadı (EPİAŞ sitesine ulaşılamadı)", file=sys.stderr)
+    # Fiyatlar zaten güncelse (son 4 gün) hata sayma: EPİAŞ ara sıra birkaç saat yanıt vermiyor
+    try:
+        son = date.fromisoformat(json.loads(PRICES.read_text(encoding="utf-8")).get("guncelleme", "2000-01-01"))
+        if (today - son).days <= 4:
+            print(f"Mevcut fiyatlar {son} tarihli, yeterince güncel; yarın tekrar denenecek.")
+            return 0
+    except Exception:
+        pass
     return 1
 
 
