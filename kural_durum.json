@@ -1,11 +1,11 @@
 {
  "608610038caab5d7cb7e": {
-  "gun": "2026-10-30",
+  "gun": "2026-10-31",
   "ad": "Termosifon",
   "limit": 1.5,
-  "bugunKwh": 1.133,
+  "bugunKwh": 0.0,
   "acik": false,
-  "kontrol": "2026-10-30 09:35"
+  "kontrol": "2026-10-31 01:42"
  },
- "guncelleme": "2026-10-30 09:35"
+ "guncelleme": "2026-10-31 01:42"
 }
