@@ -313,7 +313,7 @@
         <div class="field"><label>Düşük tarife enerji bedeli – taban (TL/kWh)</label><input type="number" id="s-taban" step="0.0001" placeholder="otomatik"></div>
         <div class="field"><label>Son kaynak katsayısı K</label><input type="number" id="s-k" step="0.0001" placeholder="otomatik"></div>
         <div class="field"><label>Kalibrasyon (boş = otomatik)</label><input type="number" id="s-kal" step="0.001" placeholder="otomatik"></div>
-        <div class="field"><label>Yıllık limit (kWh)</label><input type="number" id="s-limit" step="1"></div>
+        <div class="field"><label>Yıllık limit – 2027 ve sonrası (kWh)</label><input type="number" id="s-limit" step="1" title="EPDK: 2025 5.000 · 2026 4.000 · 2027'den itibaren 3.000 kWh"></div>
         <div class="field"><label>Limit nasıl sayılsın?</label><select id="s-limityontem"><option value="fatura">Fatura dönemleri (daha güvenli)</option><option value="takvim">Takvim yılı (1 Oca – 31 Ara)</option></select></div>
         <div class="field"><label>ETV oranı (%)</label><input type="number" id="s-etv" step="0.01"></div>
         <div class="field"><label>KDV oranı (%)</label><input type="number" id="s-kdv" step="0.01"></div>
@@ -450,6 +450,8 @@ function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.style.color=er
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* ======================= Parametreler ======================= */
+// EPDK son kaynak tedarik tarifesi mesken limitleri (yıllık kWh); 2027 ve sonrası ayarlardan değiştirilebilir
+function limitYil(y){ return y<=2025 ? 5000 : (y===2026 ? 4000 : (typeof ayarlar.limitSonra==='number' ? ayarlar.limitSonra : 3000)); }
 function P(){
   const p = prices||{};
   const sonF = sonFatura();
@@ -695,6 +697,7 @@ function renderOzet(){
   if (!sel.options.length){ for(const y of [ty-1,ty,ty+1]){ const o=document.createElement('option'); o.value=y; o.textContent=y; sel.appendChild(o);} sel.value=ty; }
   const yil = +sel.value;
   const o = yilOzet(yil);
+  p.limit = limitYil(yil);
   $('yil-badge').textContent = o.w.tip==='takvim' ? `${yil} takvim yılı` : `${yil} · fatura dönemleri ${trDate(n2d(o.w.a))} – ${trDate(n2d(o.w.b))}`;
   const kalan = p.limit - o.gercek;
   const evGun = o.kalanGun - o.yokGun;  // evde geçecek kalan günler
@@ -713,6 +716,8 @@ function renderOzet(){
         ? `⚠️ Mevcut cihaz planıyla yılı <b>${fmt0(o.toplam)} kWh</b> ile kapatıyorsunuz. ${fmt0(p.limit)} kWh altında kalmak için evde geçecek ${evGun} günde ortalama <b>${fmt(Math.max(0,gunluk),1)} kWh/gün</b> kullanmalısınız (plan: ${fmt(planGunOrt,1)}). Cihazlar sekmesinde en çok tüketenleri görebilirsiniz.`
         : `✅ Mevcut planla ${fmt0(p.limit)} kWh limitinin altında kalıyorsunuz.`)
     : (o.toplam>p.limit? `Bu yıl ${fmt0(p.limit)} kWh limiti aşıldı; sonraki yıl son kaynak tarifesi devam eder.`:`Bu yıl limit altında kalındı.`);
+  if(yil>=2027) $('limit-note').innerHTML += `<br>🎯 ${yil}'yi ${fmt0(p.limit)} kWh altında kapatırsanız ${yil+1}'de düşük (sübvansiyonlu) tarifeye dönebilirsiniz.`;
+  else if(yil===2026 && o.gercek>limitYil(2027)) $('limit-note').innerHTML += `<br>ℹ️ 2027'den itibaren limit ${fmt0(limitYil(2027))} kWh. 2026 tüketimi bunu aştığı için 2027'de son kaynak tarifesi sürer; hedef 2027'yi ${fmt0(limitYil(2027))} kWh altında kapatmak (yılı 2027 seçerek takip edebilirsiniz).`;
   const gd = yil===ty ? endeksGidisat() : null;
   if(gd){
     const hedef = Math.max(0,gunluk); const iyi = gd.gunluk <= hedef;
@@ -1029,7 +1034,7 @@ function xmlFatura(t){
 function renderAyarlar(){
   const set=(id,v,mul=1)=>{ $(id).value = (typeof v==='number')? +(v*mul).toFixed(6) : ''; };
   set('s-dag',ayarlar.dag); set('s-taban',ayarlar.taban); set('s-k',ayarlar.K); set('s-kal',ayarlar.kal);
-  $('s-limit').value = ayarlar.limit ?? 4000; $('s-limityontem').value = ayarlar.limitYontem==='takvim'?'takvim':'fatura'; $('s-etv').value = +(P().etv*100).toFixed(2); $('s-kdv').value = +(P().kdv*100).toFixed(2);
+  $('s-limit').value = limitYil(2027); $('s-limityontem').value = ayarlar.limitYontem==='takvim'?'takvim':'fatura'; $('s-etv').value = +(P().etv*100).toFixed(2); $('s-kdv').value = +(P().kdv*100).toFixed(2);
   $('kal-info').textContent = `Otomatik kalibrasyon: ×${fmt(kalibrasyonOto(),3)} · kullanılan dağıtım: ${fmt(P().dag,4)} · taban: ${fmt(P().taban,4)}`;
   // PTF/YEKDEM tablosu: geçen yıl başı → gelecek yıl sonu
   const y=new Date().getFullYear(); let rows='';
@@ -1096,7 +1101,7 @@ $('sy-save').addEventListener('click',()=>{
   $('sy-ay').value=iso.slice(0,7); $('sy-bitis').value=iso; })();
 $('s-save').addEventListener('click',()=>{
   const g=id=>{ const v=parseFloat($(id).value); return isNaN(v)? null : v; };
-  const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limit:g('s-limit')??4000, limitYontem:$('s-limityontem').value,
+  const upd={ dag:g('s-dag'), taban:g('s-taban'), K:g('s-k'), kal:g('s-kal'), limitSonra:g('s-limit')??3000, limitYontem:$('s-limityontem').value,
     etv: g('s-etv')!==null? g('s-etv')/100 : null, kdv: g('s-kdv')!==null? g('s-kdv')/100 : null };
   db.ref(`${ROOT}/ayarlar`).update(upd).then(()=>toast('Ayarlar kaydedildi.'));
 });
