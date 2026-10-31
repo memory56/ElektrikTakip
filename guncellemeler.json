@@ -83,6 +83,15 @@
    "id": "2026-10-29-priz-5-kaldir",
    "tip": "eslestirmeKaldir",
    "prizId": "bf145e8184512a154cwoq6"
+  },
+  {
+   "id": "2026-10-31-butce-2027",
+   "tip": "butce",
+   "yil": 2027,
+   "kis": 10,
+   "ara": 6,
+   "yaz": 8,
+   "mesaj": "2027 bütçesi eklendi: kış 10 · bahar/güz 6 · yaz 8 kWh/gün"
   }
  ]
 }

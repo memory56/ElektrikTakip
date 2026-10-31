@@ -196,6 +196,19 @@
       <details style="margin-top:6px"><summary class="hint" style="cursor:pointer">Girilen sayaç okumaları</summary><div id="en-liste" style="margin-top:6px"></div></details>
     </div>
 
+    <div class="card wide" id="butce-kart" hidden>
+      <h2>Aylık bütçe <span class="badge" id="butce-badge"></span></h2>
+      <p class="hint">Mevsimlik günlük sarfiyat limitleri: <b>Kış</b> Ara–Mar · <b>Bahar/Güz</b> Nis–Haz, Eyl–Kas · <b>Yaz</b> Tem–Ağu. Geçmiş günler sayaç/faturadan, gelecek günler cihaz planından.</p>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+        <div class="field"><label>Kış (kWh/gün)</label><input type="text" inputmode="decimal" id="bt-kis"></div>
+        <div class="field"><label>Bahar/Güz (kWh/gün)</label><input type="text" inputmode="decimal" id="bt-ara"></div>
+        <div class="field"><label>Yaz (kWh/gün)</label><input type="text" inputmode="decimal" id="bt-yaz"></div>
+        <div class="field" style="justify-content:flex-end"><button class="btn secondary" id="bt-save">Limitleri kaydet</button></div>
+      </div>
+      <div class="table-scroll" id="butce-tablo" style="margin-top:10px"></div>
+      <p class="hint" id="butce-not"></p>
+    </div>
+
     <div class="card">
       <h2>Fiyat durumu <span class="badge" id="fiyat-badge"></span></h2>
       <div class="tiles" id="fiyat-tiles"></div>
@@ -744,6 +757,7 @@ function renderOzet(){
   $('fiyat-note').innerHTML = `Kalibrasyon: ×${fmt(kalibrasyon(),3)} (son faturalardaki gerçek fiyat ÷ formül). PTF son 3 ay yıllık değişim: ${_trend>=1?'+':''}${fmt((_trend-1)*100,1)}%. Her 1 kWh tasarruf, sıradaki dönemde yaklaşık <b>${ilk? fmt(ilk.brutNet,2):'—'} TL</b> eder.`;
 
   renderChart(o, yil);
+  renderButce(o, yil);
   renderKis(ds, sf);
   // gelecek dönemler tablosu
   let rows='';
@@ -758,6 +772,42 @@ function renderOzet(){
   tahminKaydet();
 }
 
+/* Yıllık bütçe: ayarlar.butce[yil] = {kis, ara, yaz} (kWh/gün) */
+const MEVSIM = [0,0,0,1,1,1,2,2,1,1,1,0]; // 0 kış, 1 bahar/güz, 2 yaz
+const MEVSIM_AD = ['Kış','Bahar/Güz','Yaz'];
+function butceAy(b, mi){ return +[b.kis, b.ara, b.yaz][MEVSIM[mi]] || 0; }
+let _btYil = null;
+function renderButce(o, yil){
+  const b = ayarlar.butce && ayarlar.butce[yil];
+  $('butce-kart').hidden = !b; if(!b) return;
+  _btYil = yil;
+  const ae=document.activeElement; if(!(ae && ae.id && ae.id.startsWith('bt-'))){ $('bt-kis').value=String(b.kis).replace('.',','); $('bt-ara').value=String(b.ara).replace('.',','); $('bt-yaz').value=String(b.yaz).replace('.',','); }
+  const bugun=todayN(); let topB=0, topT=0, rows='';
+  o.aylar.forEach((a,mi)=>{
+    const ym=a.ym, gun=dim(ym), lim=butceAy(b,mi), butce=lim*gun, tahmin=a.g+a.p;
+    topB+=butce; topT+=tahmin;
+    const bas=d2n(ym+'-01'), son=bas+gun-1;
+    const durum = son<bas ? '' : (bugun>son ? 'gecmis' : (bugun>=bas ? 'simdi' : 'gelecek'));
+    const ort = a.gGun ? a.g/a.gGun : NaN;
+    const iyi = tahmin <= butce*1.0001;
+    rows += `<tr class="${durum==='simdi'?'now':''}"><td><b>${AYLAR_UZUN[mi]}</b> <span class="hint">${MEVSIM_AD[MEVSIM[mi]]}</span></td>
+      <td>${fmt(lim,1)}</td><td>${fmt0(butce)}</td>
+      <td>${a.gGun? fmt0(a.g)+` <span class="hint">(${a.gGun} gün · ${fmt(ort,1)}/gün)</span>` : '—'}</td>
+      <td>${fmt0(tahmin)}</td><td>${iyi? '✅' : '⚠️ '+fmt0(tahmin-butce)+' kWh fazla'}</td></tr>`;
+  });
+  $('butce-badge').textContent = `${yil} · toplam ${fmt0(topB)} kWh`;
+  $('butce-tablo').innerHTML = `<table><thead><tr><th>Ay</th><th>Limit kWh/gün</th><th>Bütçe kWh</th><th>Gerçekleşen</th><th>Tahmin (ay sonu)</th><th>Durum</th></tr></thead><tbody>${rows}
+    <tr><td><b>Toplam</b></td><td></td><td><b>${fmt0(topB)}</b></td><td></td><td><b>${fmt0(topT)}</b></td><td>${topT<=topB?'✅':'⚠️'}</td></tr></tbody></table>`;
+  const lim=limitYil(yil);
+  $('butce-not').innerHTML = `Bütçe toplamı ${fmt0(topB)} kWh, yıllık sınır ${fmt0(lim)} kWh: ${topB<=lim? `<b>${fmt0(lim-topB)} kWh</b> yedek pay.` : `⚠️ bütçe sınırı ${fmt0(topB-lim)} kWh aşıyor, limitleri düşürün.`} Tahmin sütunu cihaz planına göredir; plan bütçeden yüksekse ⚠️ çıkar.`;
+}
+$('bt-save').addEventListener('click',()=>{
+  if(!_btYil) return;
+  const v=id=>{ const n=parseFloat(String($(id).value).replace(',','.')); return isNaN(n)?null:n; };
+  const r={kis:v('bt-kis'), ara:v('bt-ara'), yaz:v('bt-yaz')};
+  if(r.kis===null||r.ara===null||r.yaz===null){ toast('Üç limiti de girin.',true); return; }
+  db.ref(`${ROOT}/ayarlar/butce/${_btYil}`).set(r).then(()=>toast('Bütçe limitleri kaydedildi.'));
+});
 function brutBirim(ebf){ const p=P(); return (ebf*(1+p.etv)+p.dag)*(1+p.kdv); }
 function renderKis(ds, sf){
   const p=P();
@@ -1324,6 +1374,9 @@ function guncellemeUygula(){
           }
         }
         if(Object.keys(upd).length) await db.ref(`${ROOT}/cihazlar`).update(upd);
+      }
+      if(op.tip==='butce'){
+        await db.ref(`${ROOT}/ayarlar/butce/${op.yil}`).set({kis:+op.kis, ara:+op.ara, yaz:+op.yaz});
       }
       if(op.tip==='yokluk'){
         const y = (await db.ref(`${ROOT}/ayarlar/yokluk`).once('value')).val() || {};

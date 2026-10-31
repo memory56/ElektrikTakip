@@ -1,4 +1,4 @@
-const CACHE_NAME = 'elektrik-takip-v26';
+const CACHE_NAME = 'elektrik-takip-v27';
 const SHELL = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', (e) => {
