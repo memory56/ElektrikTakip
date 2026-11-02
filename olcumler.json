@@ -25,7 +25,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1924,
@@ -60,7 +60,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1992,
@@ -94,8 +94,8 @@
    "ad": "5 - Tapo",
    "kategori": "cz",
    "online": true,
-   "anlikW": 3.3,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikW": 3.2,
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1302,
@@ -130,7 +130,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1842,
@@ -165,13 +165,13 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 94,
     "maksW": 118,
     "beklemeW": 0.0,
-    "kayit": 26,
+    "kayit": 24,
     "tarih": "2026-11-02"
    }
   },
@@ -199,14 +199,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 3.6,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikW": 3.7,
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 597,
+    "calismaW": 598,
     "maksW": 760,
     "beklemeW": 9.2,
-    "kayit": 181,
+    "kayit": 179,
     "tarih": "2026-11-02"
    }
   },
@@ -234,14 +234,14 @@
    "ad": "6 - LG Tv",
    "kategori": "cz",
    "online": true,
-   "anlikW": 4.2,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikW": 4.5,
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 1662,
+    "calismaW": 1676,
     "maksW": 1691,
     "beklemeW": 4.5,
-    "kayit": 9,
+    "kayit": 8,
     "tarih": "2026-11-02"
    }
   },
@@ -254,19 +254,22 @@
     "2026-10-22": 0.709,
     "2026-10-23": 0.288,
     "2026-10-24": 0.415,
-    "2026-10-25": 0.693
+    "2026-10-25": 0.693,
+    "2026-10-30": 0.054,
+    "2026-10-31": 0.06,
+    "2026-11-01": 0.06
    },
    "ad": "8-Nest",
    "kategori": "cz",
    "online": true,
-   "anlikW": 2.7,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikW": 2.2,
+   "anlikZaman": "2026-11-02 12:55",
    "guc": {
-    "calismaW": 107,
-    "maksW": 200,
-    "beklemeW": 7.5,
-    "kayit": 94,
-    "tarih": "2026-10-26"
+    "calismaW": 102,
+    "maksW": 125,
+    "beklemeW": 7.6,
+    "kayit": 65,
+    "tarih": "2026-11-02"
    },
    "yontem": "add_ele"
   },
@@ -292,12 +295,12 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "guc": {
     "calismaW": 72,
     "maksW": 75,
     "beklemeW": 0.0,
-    "kayit": 441,
+    "kayit": 438,
     "tarih": "2026-11-02"
    },
    "yontem": "add_ele"
@@ -324,16 +327,16 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 8.6,
-   "anlikZaman": "2026-11-02 02:51",
+   "anlikZaman": "2026-11-02 12:55",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 9,
     "maksW": 12,
     "beklemeW": 4.9,
-    "kayit": 67,
+    "kayit": 71,
     "tarih": "2026-11-02"
    }
   }
  },
- "guncelleme": "2026-11-02 02:51"
+ "guncelleme": "2026-11-02 12:55"
 }
