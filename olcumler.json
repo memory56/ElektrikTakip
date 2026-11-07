@@ -29,7 +29,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1927,
@@ -67,7 +67,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1992,
@@ -106,8 +106,8 @@
    "ad": "5 - Tapo",
    "kategori": "cz",
    "online": true,
-   "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikW": 3.3,
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 7,
@@ -145,7 +145,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1842,
@@ -185,7 +185,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 92,
@@ -224,14 +224,14 @@
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 93.3,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikW": 125.9,
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
-    "calismaW": 606,
+    "calismaW": 607,
     "maksW": 743,
     "beklemeW": 9.2,
-    "kayit": 152,
+    "kayit": 153,
     "tarih": "2026-11-07"
    }
   },
@@ -264,14 +264,14 @@
    "ad": "6 - TV Çoklu Priz",
    "kategori": "cz",
    "online": true,
-   "anlikW": 5.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikW": 4.4,
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 5,
     "maksW": 5,
     "beklemeW": 4.4,
-    "kayit": 22,
+    "kayit": 20,
     "tarih": "2026-11-07"
    }
   },
@@ -297,13 +297,13 @@
    "ad": "8-Nest",
    "kategori": "cz",
    "online": true,
-   "anlikW": 2.1,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikW": 2.8,
+   "anlikZaman": "2026-11-07 22:00",
    "guc": {
     "calismaW": 5,
     "maksW": 5,
     "beklemeW": 2.1,
-    "kayit": 11,
+    "kayit": 12,
     "tarih": "2026-11-07"
    },
    "yontem": "add_ele"
@@ -335,12 +335,12 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikZaman": "2026-11-07 22:00",
    "guc": {
     "calismaW": 72,
     "maksW": 73,
     "beklemeW": 0.0,
-    "kayit": 425,
+    "kayit": 424,
     "tarih": "2026-11-07"
    },
    "yontem": "add_ele"
@@ -371,17 +371,17 @@
    "ad": "10-Modem",
    "kategori": "cz",
    "online": true,
-   "anlikW": 8.4,
-   "anlikZaman": "2026-11-07 12:12",
+   "anlikW": 8.8,
+   "anlikZaman": "2026-11-07 22:00",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 8,
     "maksW": 9,
     "beklemeW": null,
-    "kayit": 105,
+    "kayit": 108,
     "tarih": "2026-11-07"
    }
   }
  },
- "guncelleme": "2026-11-07 12:12"
+ "guncelleme": "2026-11-07 22:00"
 }
