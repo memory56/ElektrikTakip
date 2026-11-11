@@ -92,6 +92,14 @@
    "ara": 6,
    "yaz": 8,
    "mesaj": "2027 bütçesi eklendi: kış 10 · bahar/güz 6 · yaz 8 kWh/gün"
+  },
+  {
+   "id": "2026-11-11-yokluk-kasim-uzatma",
+   "tip": "yokluk",
+   "bas": "2026-10-30",
+   "bit": "2026-11-16",
+   "kwh": 2.2,
+   "mesaj": "Yokluk dönemi uzatıldı: 30 Eki – 16 Kas, 2,2 kWh/gün (dönüş 17 Kas)"
   }
  ]
 }
