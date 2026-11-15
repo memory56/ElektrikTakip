@@ -100,6 +100,22 @@
    "bit": "2026-11-16",
    "kwh": 2.2,
    "mesaj": "Yokluk dönemi uzatıldı: 30 Eki – 16 Kas, 2,2 kWh/gün (dönüş 17 Kas)"
+  },
+  {
+   "id": "2026-11-15-yokluk-kasim-olculen",
+   "tip": "yokluk",
+   "bas": "2026-10-30",
+   "bit": "2026-11-16",
+   "kwh": 1.9,
+   "mesaj": "Yokluk tüketimi ölçüme göre güncellendi: 30 Eki – 16 Kas, 1,9 kWh/gün"
+  },
+  {
+   "id": "2026-11-15-yokluk-aralik-olculen",
+   "tip": "yokluk",
+   "bas": "2026-12-25",
+   "bit": "2026-12-31",
+   "kwh": 1.9,
+   "mesaj": "25–31 Ara yokluk tüketimi 1,9 kWh/gün (ölçülen)"
   }
  ]
 }
