@@ -29,7 +29,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1927,
@@ -67,7 +67,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1992,
@@ -110,20 +110,21 @@
     "2026-11-12": 0.062,
     "2026-11-13": 0.062,
     "2026-11-14": 0.053,
-    "2026-11-15": 0.058
+    "2026-11-15": 0.058,
+    "2026-11-16": 0.062
    },
    "ad": "5 - Tapo",
    "kategori": "cz",
    "online": true,
-   "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikW": 3.3,
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 9,
     "maksW": 9,
     "beklemeW": 3.4,
     "kayit": 2,
-    "tarih": "2026-11-16"
+    "tarih": "2026-11-17"
    }
   },
   "608610038caab5dfba47": {
@@ -154,7 +155,7 @@
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 1842,
@@ -197,13 +198,14 @@
     "2026-11-12": 0.0,
     "2026-11-13": 0.001,
     "2026-11-14": 0.0,
-    "2026-11-15": 0.0
+    "2026-11-15": 0.0,
+    "2026-11-16": 0.001
    },
    "ad": "7- Veranda TV",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 92,
@@ -246,20 +248,21 @@
     "2026-11-12": 0.872,
     "2026-11-13": 0.913,
     "2026-11-14": 0.947,
-    "2026-11-15": 0.959
+    "2026-11-15": 0.959,
+    "2026-11-16": 0.764
    },
    "ad": "2 - Buzdolabı",
    "kategori": "cz",
    "online": true,
-   "anlikW": 93.9,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikW": 3.6,
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 612,
     "maksW": 741,
     "beklemeW": 9.2,
-    "kayit": 180,
-    "tarih": "2026-11-16"
+    "kayit": 175,
+    "tarih": "2026-11-17"
    }
   },
   "bf9c6a18b5fe5c1404acsb": {
@@ -295,20 +298,21 @@
     "2026-11-12": 0.11,
     "2026-11-13": 0.11,
     "2026-11-14": 0.109,
-    "2026-11-15": 0.11
+    "2026-11-15": 0.11,
+    "2026-11-16": 0.11
    },
    "ad": "6 - TV Çoklu Priz",
    "kategori": "cz",
    "online": true,
-   "anlikW": 4.8,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikW": 4.3,
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 5,
     "maksW": 5,
     "beklemeW": 4.4,
-    "kayit": 12,
-    "tarih": "2026-11-16"
+    "kayit": 13,
+    "tarih": "2026-11-17"
    }
   },
   "bf6675e15035ea146ee7on": {
@@ -337,19 +341,20 @@
     "2026-11-12": 0.06,
     "2026-11-13": 0.06,
     "2026-11-14": 0.06,
-    "2026-11-15": 0.06
+    "2026-11-15": 0.06,
+    "2026-11-16": 0.06
    },
    "ad": "8-Nest",
    "kategori": "cz",
    "online": true,
-   "anlikW": 2.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikW": 2.7,
+   "anlikZaman": "2026-11-17 02:29",
    "guc": {
     "calismaW": 5,
     "maksW": 5,
-    "beklemeW": 2.0,
-    "kayit": 16,
-    "tarih": "2026-11-16"
+    "beklemeW": 2.1,
+    "kayit": 14,
+    "tarih": "2026-11-17"
    },
    "yontem": "add_ele"
   },
@@ -383,19 +388,20 @@
     "2026-11-12": 0.458,
     "2026-11-13": 0.486,
     "2026-11-14": 0.494,
-    "2026-11-15": 0.494
+    "2026-11-15": 0.494,
+    "2026-11-16": 0.492
    },
    "ad": "9-Dondurucu",
    "kategori": "cz",
    "online": true,
    "anlikW": 0.0,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikZaman": "2026-11-17 02:29",
    "guc": {
     "calismaW": 72,
     "maksW": 73,
     "beklemeW": 0.0,
-    "kayit": 427,
-    "tarih": "2026-11-16"
+    "kayit": 428,
+    "tarih": "2026-11-17"
    },
    "yontem": "add_ele"
   },
@@ -429,22 +435,23 @@
     "2026-11-12": 0.204,
     "2026-11-13": 0.206,
     "2026-11-14": 0.205,
-    "2026-11-15": 0.206
+    "2026-11-15": 0.206,
+    "2026-11-16": 0.206
    },
    "ad": "10-Modem",
    "kategori": "cz",
    "online": true,
-   "anlikW": 8.5,
-   "anlikZaman": "2026-11-16 13:08",
+   "anlikW": 8.7,
+   "anlikZaman": "2026-11-17 02:29",
    "yontem": "add_ele",
    "guc": {
     "calismaW": 8,
     "maksW": 9,
     "beklemeW": null,
-    "kayit": 100,
-    "tarih": "2026-11-16"
+    "kayit": 102,
+    "tarih": "2026-11-17"
    }
   }
  },
- "guncelleme": "2026-11-16 13:08"
+ "guncelleme": "2026-11-17 02:29"
 }
