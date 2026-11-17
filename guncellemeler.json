@@ -124,6 +124,22 @@
    "saat": "12:30",
    "endeks": 35056.708,
    "mesaj": "Dönüş sayaç okuması eklendi: 35.056,708 (17.11.2026 12:30)"
+  },
+  {
+   "id": "2026-11-17-yokluk-kasim-sayac",
+   "tip": "yokluk",
+   "bas": "2026-10-30",
+   "bit": "2026-11-16",
+   "kwh": 2.4,
+   "mesaj": "Yokluk tüketimi sayaca göre: 30 Eki – 16 Kas, 2,4 kWh/gün"
+  },
+  {
+   "id": "2026-11-17-yokluk-aralik-sayac",
+   "tip": "yokluk",
+   "bas": "2026-12-25",
+   "bit": "2026-12-31",
+   "kwh": 2.4,
+   "mesaj": "25–31 Ara yokluk tüketimi 2,4 kWh/gün (sayaçtan)"
   }
  ]
 }
