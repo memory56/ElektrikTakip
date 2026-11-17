@@ -116,6 +116,14 @@
    "bit": "2026-12-31",
    "kwh": 1.9,
    "mesaj": "25–31 Ara yokluk tüketimi 1,9 kWh/gün (ölçülen)"
+  },
+  {
+   "id": "2026-11-17-endeks-donus",
+   "tip": "endeks",
+   "tarih": "2026-11-17",
+   "saat": "12:30",
+   "endeks": 35056.708,
+   "mesaj": "Dönüş sayaç okuması eklendi: 35.056,708 (17.11.2026 12:30)"
   }
  ]
 }
