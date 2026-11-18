@@ -1375,6 +1375,10 @@ function guncellemeUygula(){
         }
         if(Object.keys(upd).length) await db.ref(`${ROOT}/cihazlar`).update(upd);
       }
+      if(op.tip==='fatura' && op.kayit && op.kayit.donem){
+        const mevcut = (await db.ref(`${ROOT}/faturalar/${op.kayit.donem}`).once('value')).val();
+        if(!mevcut || op.uzerineYaz) await db.ref(`${ROOT}/faturalar/${op.kayit.donem}`).set(op.kayit);
+      }
       if(op.tip==='butce'){
         await db.ref(`${ROOT}/ayarlar/butce/${op.yil}`).set({kis:+op.kis, ara:+op.ara, yaz:+op.yaz});
       }
