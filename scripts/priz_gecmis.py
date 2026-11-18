@@ -14,7 +14,7 @@ api = Tuya(os.environ["TUYA_ACCESS_ID"].strip(), os.environ["TUYA_ACCESS_SECRET"
 api.login()
 sc = olcekler(api, did)
 simdi = datetime.now(TR)
-lg = loglar(api, did, "switch_1,cur_power,add_ele", int((simdi - timedelta(hours=saat)).timestamp() * 1000), int(simdi.timestamp() * 1000))
+lg = loglar(api, did, os.environ.get("KODLAR") or "switch_1,cur_power,add_ele,countdown_1", int((simdi - timedelta(hours=saat)).timestamp() * 1000), int(simdi.timestamp() * 1000))
 out = []
 for l in sorted(lg, key=lambda x: int(x["event_time"])):
     v = l.get("value")
