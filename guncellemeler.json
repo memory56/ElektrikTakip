@@ -140,6 +140,27 @@
    "bit": "2026-12-31",
    "kwh": 2.4,
    "mesaj": "25–31 Ara yokluk tüketimi 2,4 kWh/gün (sayaçtan)"
+  },
+  {
+   "id": "fatura-2026-11",
+   "tip": "fatura",
+   "kayit": {
+    "donem": "2026-11",
+    "ilkTarih": "2026-10-18",
+    "sonTarih": "2026-11-18",
+    "ilkEndeks": 34924.117,
+    "sonEndeks": 35063.839,
+    "kwh": 139.722,
+    "enerjiBF": 3.821094,
+    "dagitimBF": 2.4249,
+    "dagitimTL": 338.81,
+    "etv": 26.69,
+    "kdv": 89.94,
+    "faturaTutar": 989.33,
+    "odenecek": 990.0,
+    "kaynak": "xml-otomatik"
+   },
+   "mesaj": "2026-11 faturası eklendi: 139.7 kWh, 990 TL"
   }
  ]
 }
