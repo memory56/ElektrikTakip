@@ -1,5 +1,5 @@
 {
-  "guncelleme": "2026-11-18",
+  "guncelleme": "2026-11-19",
   "kaynak": "EPİAŞ günlük bülten (Aylık PTF Ortalamaları tablosu)",
   "ptf": {
     "2023-01": 3431.49,
@@ -48,11 +48,11 @@
     "2026-08": 2907.81,
     "2026-09": 2742.43,
     "2026-10": 2925.47,
-    "2026-11": 2908.92
+    "2026-11": 2881.96
   },
   "ptfGunluk": {
-    "tarih": "2026-11-18",
-    "deger": 2099.75
+    "tarih": "2026-11-19",
+    "deger": 2365.49
   },
   "yekdem": {
     "2025-01": 362.79,
@@ -85,5 +85,5 @@
   "dagitimBedeli": 2.4249,
   "etvOrani": 0.05,
   "kdvOrani": 0.1,
-  "kaynakUrl": "https://www.epias.com.tr/wp-content/uploads/2026/11/epias-bulten-18.11.2026.pdf"
+  "kaynakUrl": "https://www.epias.com.tr/wp-content/uploads/2026/11/epias-bulten-19.11.2026.pdf"
 }
