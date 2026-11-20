@@ -378,7 +378,10 @@ const firebaseApp = firebase.initializeApp({
   storageBucket: "amerikano-b037f.firebasestorage.app",
   messagingSenderId: "579047493957",
   appId: "1:579047493957:web:53bf80388ad14b268bae2c"
-});
+}, 'elektrikTakip');
+// Ayrı uygulama adı: oturum, aynı adresteki (memory56.github.io) Amerikano / Su Faturası
+// uygulamalarıyla PAYLAŞILMAZ. Yoksa Amerikano'nun oyun hesabıyla giriş yapılınca bu uygulama
+// da o hesapla açılıyor ve veritabanı "izin yok" (PERMISSION_DENIED) diyordu.
 const auth = firebase.auth(firebaseApp);
 const provider = new firebase.auth.GoogleAuthProvider();
 const db = firebase.database(firebaseApp);
@@ -1394,6 +1397,7 @@ function guncellemeUygula(){
   }).catch(e=>console.warn('guncellemeler', e));
 }
 auth.onAuthStateChanged(user=>{
+  if (user && !(user.providerData||[]).some(p=>p.providerId==='google.com')){ auth.signOut(); return; } // yalnızca Google hesabı
   if (user){ $('auth-overlay').style.display='none'; $('userbar').style.display='flex'; $('user-email').textContent=user.email||'Giriş yapıldı'; if(!_inited){_inited=true; initData(); setTimeout(guncellemeUygula,1500);} }
   else { $('auth-overlay').style.display='flex'; $('userbar').style.display='none'; }
 });
