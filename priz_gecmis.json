@@ -1,39 +1,88 @@
 {
- "priz": "608610038caab5d7cb7e",
- "olusturma": "2026-11-18 10:38",
+ "priz": "bf145e8184512a154cwoq6",
+ "olusturma": "2026-11-21 15:19",
  "kayitlar": [
   {
-   "zaman": "2026-11-18 10:37:00",
+   "zaman": "2026-11-21 14:36:38",
    "kod": "switch_1",
    "deger": "true",
    "kaynak": "1",
    "id": 7
   },
   {
-   "zaman": "2026-11-18 10:37:01",
-   "kod": "countdown_1",
-   "deger": "1800",
+   "zaman": "2026-11-21 14:39:57",
+   "kod": "switch_1",
+   "deger": "true",
    "kaynak": "1",
    "id": 7
   },
   {
-   "zaman": "2026-11-18 10:37:31",
+   "zaman": "2026-11-21 14:39:57",
    "kod": "countdown_1",
-   "deger": "1770",
+   "deger": "0",
    "kaynak": "1",
    "id": 7
   },
   {
-   "zaman": "2026-11-18 10:37:47",
+   "zaman": "2026-11-21 14:39:57",
+   "kod": "cur_power",
+   "deger": 45.1,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:06:51",
+   "kod": "add_ele",
+   "deger": 0.022,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:14:57",
+   "kod": "cur_power",
+   "deger": 44.8,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:14:59",
+   "kod": "cur_power",
+   "deger": 44.7,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:15:09",
+   "kod": "cur_power",
+   "deger": 44.8,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:15:14",
+   "kod": "cur_power",
+   "deger": 44.6,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:15:19",
+   "kod": "cur_power",
+   "deger": 44.8,
+   "kaynak": "1",
+   "id": 7
+  },
+  {
+   "zaman": "2026-11-21 15:15:44",
    "kod": "switch_1",
    "deger": "false",
    "kaynak": "1",
    "id": 7
   },
   {
-   "zaman": "2026-11-18 10:37:47",
-   "kod": "countdown_1",
-   "deger": "0",
+   "zaman": "2026-11-21 15:15:46",
+   "kod": "cur_power",
+   "deger": 0.0,
    "kaynak": "1",
    "id": 7
   }
