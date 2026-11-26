@@ -18,8 +18,11 @@ HOSTS = {"eu": "https://openapi.tuyaeu.com", "us": "https://openapi.tuyaus.com",
          "cn": "https://openapi.tuyacn.com", "in": "https://openapi.tuyain.com",
          "weu": "https://openapi-weaz.tuyaeu.com"}
 EMPTY_SHA = hashlib.sha256(b"").hexdigest()
-GUN_GERI = int(os.environ.get("TUYA_GUN", "3"))  # kaç günü yeniden hesapla (log saklama 7 gün)
+GUN_GERI = int(os.environ.get("TUYA_GUN") or "3")  # kaç günü yeniden hesapla (log saklama 7 gün)
 MAX_ARA = 1800  # cur_power entegrasyonunda en fazla bu kadar saniye boşluk say
+SINIR_KODU = "40000309"  # Tuya: "The log query is too frequent"
+BEKLEMELER = (3, 8, 20, 45)  # sorgu sınırına takılınca bekle (sn) ve tekrar dene
+SAYFA_ARASI = 0.4  # log sayfaları arasında kısa bekleme (sn)
 
 
 class Tuya:
@@ -83,13 +86,27 @@ def olcekler(api, did):
     return sc
 
 
+def _log_sayfa(api, did, q):
+    """Tek log sayfası; Tuya sorgu sınırı (40000309) gelirse bekleyip tekrar dener."""
+    for bekle in BEKLEMELER + (None,):
+        try:
+            r = api.get(f"/v1.0/devices/{did}/logs", q)
+            time.sleep(SAYFA_ARASI)
+            return r
+        except RuntimeError as e:
+            if SINIR_KODU not in str(e) or bekle is None:
+                raise
+            print(f"  sorgu sınırı, {bekle} sn bekleniyor…")
+            time.sleep(bekle)
+
+
 def loglar(api, did, codes, bas_ms, bit_ms):
     out, row = [], None
     for _ in range(200):
         q = {"type": "7", "codes": codes, "start_time": str(bas_ms), "end_time": str(bit_ms), "size": "100"}
         if row:
             q["start_row_key"] = row
-        r = api.get(f"/v1.0/devices/{did}/logs", q)
+        r = _log_sayfa(api, did, q)
         out += r.get("logs", [])
         if not r.get("has_next"):
             break
@@ -157,14 +174,23 @@ def main():
         if "cur_power" not in status and "add_ele" not in status:
             continue  # enerji ölçmeyen cihaz
         sc = olcekler(api, did)
+        bas_ms, bit_ms = int(bas.timestamp() * 1000), int(bit.timestamp() * 1000)
+        gun, yontem, guc = None, None, None
+        # 1) Günlük kWh: yalnızca hesaplanan günlerin add_ele kayıtları (seyrek, az sayfa).
+        #    add_ele yoksa aynı aralıktaki cur_power kayıtları entegre edilir.
         try:
-            lg = loglar(api, did, "add_ele,cur_power", int(min(bas, guc_bas).timestamp() * 1000), int(simdi.timestamp() * 1000))
-            gun_lg = [l for l in lg if int(l["event_time"]) < bit.timestamp() * 1000]
+            gun_lg = loglar(api, did, "add_ele", bas_ms, bit_ms)
+            if not gun_lg:
+                gun_lg = loglar(api, did, "cur_power", bas_ms, bit_ms)
             gun, yontem = gunluk_hesapla(gun_lg, sc, gunler)
-            guc = calisma_gucu(lg, sc)
         except Exception as e:
-            print(f"  {d.get('name')}: log okunamadı: {e}")
-            gun, yontem, guc = None, None, None
+            print(f"  {d.get('name')}: günlük kayıt okunamadı: {e}")
+        # 2) Çalışma gücü: son 7 günün cur_power kayıtları (sık bildiren prizlerde çok sayfa);
+        #    okunamazsa önceki değer korunur, günlük kWh etkilenmez.
+        try:
+            guc = calisma_gucu(loglar(api, did, "cur_power", int(guc_bas.timestamp() * 1000), int(simdi.timestamp() * 1000)), sc)
+        except Exception as e:
+            print(f"  {d.get('name')}: çalışma gücü okunamadı: {e}")
         rec = data["cihazlar"].setdefault(did, {"gunluk": {}})
         rec.update({"ad": d.get("name"), "kategori": d.get("category"), "online": d.get("online")})
         if "cur_power" in status:
