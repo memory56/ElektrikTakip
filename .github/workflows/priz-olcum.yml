@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "41 2,8,14,20 * * *"   # günde 4 kez: 05:41, 11:41, 17:41, 23:41 (TSİ)
   workflow_dispatch:
+    inputs:
+      gun:
+        description: "Kaç günü yeniden hesapla (Tuya kayıtları 7 gün saklar; eksik günleri doldurmak için 6)"
+        default: "3"
 
 permissions:
   contents: write
@@ -22,6 +26,7 @@ jobs:
           TUYA_ACCESS_ID: ${{ secrets.TUYA_ACCESS_ID }}
           TUYA_ACCESS_SECRET: ${{ secrets.TUYA_ACCESS_SECRET }}
           TUYA_REGION: ${{ secrets.TUYA_REGION }}
+          TUYA_GUN: ${{ inputs.gun || '3' }}
         run: python3 scripts/tuya_olcum.py
       - name: Değişiklik varsa kaydet
         run: |
